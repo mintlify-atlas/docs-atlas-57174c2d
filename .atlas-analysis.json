@@ -1,0 +1,106 @@
+{
+  "projectType": "frontend",
+  "projectName": "iframe-edge",
+  "projectDescription": "Self-contained HTML/CSS/JS widgets for Corsair iCUE and Xeneon Edge displays",
+  "theme": "palm",
+  "primaryColor": "#1DB954",
+  "lightColor": "#1ED760",
+  "darkColor": "#1AA34A",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "prerequisites"
+            ]
+          },
+          {
+            "group": "Concepts",
+            "pages": [
+              "concepts/architecture",
+              "concepts/theming",
+              "concepts/localization"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Widgets",
+        "groups": [
+          {
+            "group": "Productivity",
+            "pages": [
+              "widgets/productivity/hydration",
+              "widgets/productivity/budget",
+              "widgets/productivity/pomodoro",
+              "widgets/productivity/notes",
+              "widgets/productivity/daily-focus",
+              "widgets/productivity/habit-tracker",
+              "widgets/productivity/posture-reminder",
+              "widgets/productivity/quick-clipboard",
+              "widgets/productivity/timer"
+            ]
+          },
+          {
+            "group": "AI & Streaming",
+            "pages": [
+              "widgets/ai/ai-assistant",
+              "widgets/streaming/spotify-visualizer",
+              "widgets/streaming/news-radar"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Integration",
+        "groups": [
+          {
+            "group": "iCUE Setup",
+            "pages": [
+              "integration/icue-installation",
+              "integration/iframe-widget",
+              "integration/sizing"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "integration/customization",
+              "integration/local-storage",
+              "integration/troubleshooting"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "10+ self-contained productivity widgets",
+    "AI Assistant with Google Gemini, Anthropic Claude, and OpenAI ChatGPT",
+    "Spotify Visualizer with real-time lyrics",
+    "Dark/Light mode toggle on all widgets",
+    "Bilingual support (English/French)",
+    "Fully responsive for iCUE container sizes (M, L, XL)",
+    "No external dependencies - pure HTML/CSS/JS",
+    "Local storage for settings persistence"
+  ],
+  "publicApiSurface": [
+    "Hydration Tracker Widget",
+    "Budget Tracker Widget",
+    "Pomodoro Timer Widget",
+    "Quick Notes Widget",
+    "Daily Focus Widget",
+    "Habit Tracker Widget",
+    "Posture & Blink Reminder Widget",
+    "Quick Clipboard Widget",
+    "Timer Widget",
+    "AI Assistant Widget",
+    "Spotify Visualizer Widget",
+    "News Radar Widget"
+  ]
+}
