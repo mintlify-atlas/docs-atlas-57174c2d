@@ -1,122 +1,94 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "iframe-edge",
+  "theme": "palm",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#1DB954",
+    "light": "#1ED760",
+    "dark": "#1AA34A"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/StealthyLabsHQ/iframe-edge"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/StealthyLabsHQ/iframe-edge"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
               "index",
               "quickstart",
-              "development"
+              "prerequisites"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
-            ]
-          },
-          {
-            "group": "Writing content",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "concepts/architecture",
+              "concepts/theming",
+              "concepts/localization"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Widgets",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Productivity",
             "pages": [
-              "api-reference/introduction"
+              "widgets/productivity/hydration",
+              "widgets/productivity/budget",
+              "widgets/productivity/pomodoro",
+              "widgets/productivity/notes",
+              "widgets/productivity/daily-focus",
+              "widgets/productivity/habit-tracker",
+              "widgets/productivity/posture-reminder",
+              "widgets/productivity/quick-clipboard",
+              "widgets/productivity/timer"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "AI & Streaming",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "widgets/ai/ai-assistant",
+              "widgets/streaming/spotify-visualizer",
+              "widgets/streaming/news-radar"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Integration",
+        "groups": [
+          {
+            "group": "iCUE Setup",
+            "pages": [
+              "integration/icue-installation",
+              "integration/iframe-widget",
+              "integration/sizing"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "integration/customization",
+              "integration/local-storage",
+              "integration/troubleshooting"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

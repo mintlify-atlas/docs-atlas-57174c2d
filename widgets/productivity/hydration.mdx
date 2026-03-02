@@ -1,0 +1,130 @@
+---
+title: Hydration Tracker
+description: Track your daily water intake with a visual glass counter and automatic daily reset
+---
+
+The Hydration widget helps you track your daily water consumption with a goal of 8 glasses (2 liters) per day. It features a visual glass grid, automatic daily reset, and bilingual support.
+
+## Demo
+
+<iframe src="https://stealthylabshq.github.io/iframe-edge/productivity/hydration/" style={{width: '100%', height: '400px', border: '1px solid var(--border-color)', borderRadius: '8px'}}></iframe>
+
+## Key Features
+
+- **Daily goal tracking**: Track progress toward 8 glasses of water (2L)
+- **Visual glass grid**: See filled glasses (💧) vs empty circles (○)
+- **Auto-save progress**: Saves to localStorage automatically
+- **Daily reset**: Automatically resets counter at midnight
+- **Progress messages**: Dynamic status showing glasses remaining
+- **Bilingual**: French/English toggle
+- **Theme support**: Light/dark mode with sync across tabs
+
+## How It Works
+
+### Water Tracking
+
+The widget tracks your daily water intake with these states:
+
+1. **Not started**: "Start hydrating!" message
+2. **In progress**: "X glass(es) left for your goal"
+3. **Goal reached**: "🎉 Daily goal reached!"
+
+### Daily Reset Logic
+
+The widget automatically checks if it's a new day:
+
+```javascript
+function today() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function loadWater() {
+  const savedDate = localStorage.getItem(WATER_DATE_KEY);
+  if (savedDate !== today()) {
+    localStorage.setItem(WATER_DATE_KEY, today());
+    localStorage.setItem(WATER_KEY, "0");
+    return 0;
+  }
+  return parseInt(localStorage.getItem(WATER_KEY) || "0", 10);
+}
+```
+
+Every 60 seconds, it checks if the date has changed:
+
+```javascript
+setInterval(() => {
+  const saved = localStorage.getItem(WATER_DATE_KEY);
+  if (saved && saved !== today()) {
+    waterCount = 0;
+    saveWater(0);
+    renderWater();
+    showToast(t("toastReset"));
+  }
+}, 60_000);
+```
+
+## Usage
+
+<Steps>
+  <Step title="Add water">
+    Click the "+1 glass" button to increment your water count
+  </Step>
+  <Step title="Track progress">
+    Watch the glass grid fill up with 💧 emoji as you drink
+  </Step>
+  <Step title="Undo mistakes">
+    Use the minus button to decrement if you added too many
+  </Step>
+  <Step title="Reach your goal">
+    Get a celebration toast when you hit 8 glasses
+  </Step>
+</Steps>
+
+<Note>
+The widget prevents going over the 8-glass goal and shows "✅ Goal already reached for today!" if you try to add more.
+</Note>
+
+## Local Storage Keys
+
+| Key | Purpose | Type |
+|-----|---------|------|
+| `pa_waterCount` | Current water count | Number (0-8) |
+| `pa_waterDate` | Date of last water entry | ISO date string (YYYY-MM-DD) |
+| `pa_theme` | Theme preference | "dark" or "light" |
+| `pa_lang` | Language preference | "fr" or "en" |
+
+## Visual Feedback
+
+The glass grid provides instant visual feedback:
+
+```javascript
+function buildGlassGrid() {
+  const grid = $("glassGrid");
+  grid.replaceChildren();
+  for (let i = 0; i < WATER_GOAL; i++) {
+    const cell = document.createElement("div");
+    cell.className = "glass-cell" + (i < waterCount ? " filled" : "");
+    cell.textContent = i < waterCount ? "💧" : "○";
+    cell.style.fontSize = i < waterCount ? "18px" : "16px";
+    cell.style.color = i < waterCount ? "" : "var(--text-3)";
+    grid.appendChild(cell);
+  }
+}
+```
+
+## Cross-Tab Sync
+
+The widget listens for storage events to sync across browser tabs:
+
+```javascript
+window.addEventListener("storage", (e) => {
+  if (e.key === LANG_KEY) {
+    currentLang = e.newValue;
+    updateLangUI();
+  }
+});
+```
+
+<Tip>
+Keep the widget visible in your sidebar to maintain accountability throughout the day. The visual glass grid makes it easy to see your progress at a glance.
+</Tip>

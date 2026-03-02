@@ -1,0 +1,487 @@
+---
+title: Localization
+description: Bilingual English/French support using the i18n object pattern
+icon: language
+---
+
+## Overview
+
+Widgets support **bilingual localization** with English and French translations using a simple i18n (internationalization) object pattern. User language preference is stored in localStorage and synchronized across all widgets.
+
+## Language system architecture
+
+The localization system consists of:
+
+1. **i18n object** - Contains all translations organized by language
+2. **Translation function** - Helper function to retrieve translated strings
+3. **Language toggle** - UI for switching between languages
+4. **localStorage** - Persistent language preference
+5. **Update function** - Refreshes UI with current language
+
+## Language storage key
+
+All widgets use a consistent localStorage key:
+
+```javascript
+const LANG_KEY = "pa_lang";
+```
+
+**Possible values:**
+- `"en"` - English
+- `"fr"` - French (default)
+
+## i18n object pattern
+
+Translations are organized in a nested object structure:
+
+<Tabs>
+  <Tab title="Pomodoro">
+    ```javascript pomodoro/app.js:38-69
+    const i18n = {
+      fr: {
+        focus: "Focus",
+        pause: "Pause",
+        focusSub: "focus",
+        pauseSub: "pause",
+        btnStart: "Start",
+        btnResume: "Reprendre",
+        btnPause: "Pause",
+        toastFocusEnd: "🍅 Focus terminé ! Pause 5 min.",
+        toastCycleEnd: "🎉 Cycle complet ! 4 pomodoros terminés.",
+        toastNextFocus: "💪 C'est reparti ! Nouveau focus.",
+        ariaReset: "Réinitialiser",
+        ariaStart: "Démarrer",
+        ariaSkip: "Passer la phase",
+      },
+      en: {
+        focus: "Focus",
+        pause: "Break",
+        focusSub: "focus",
+        pauseSub: "break",
+        btnStart: "Start",
+        btnResume: "Resume",
+        btnPause: "Pause",
+        toastFocusEnd: "🍅 Focus complete! 5 min break.",
+        toastCycleEnd: "🎉 Cycle complete! 4 pomodoros finished.",
+        toastNextFocus: "💪 Here we go again! New focus.",
+        ariaReset: "Reset",
+        ariaStart: "Start",
+        ariaSkip: "Skip phase",
+      },
+    };
+    ```
+  </Tab>
+  
+  <Tab title="Hydration">
+    ```javascript hydration/app.js:41-65
+    const i18n = {
+      fr: {
+        title: "Hydratation",
+        meta: "/ 8 verres · 2 L",
+        start: "Commencez à vous hydrater !",
+        left: (n) =>
+          `Plus que ${n} verre${n > 1 ? "s" : ""} pour l'objectif`,
+        goal: "🎉 Objectif journalier atteint !",
+        addBtn: "+1 verre",
+        toastGoal: "💧 Bravo ! Objectif hydratation atteint !",
+        toastAlready: "✅ Objectif déjà atteint pour aujourd'hui !",
+        toastReset: "🌅 Nouveau jour ! Compteur d'eau réinitialisé.",
+      },
+      en: {
+        title: "Hydration",
+        meta: "/ 8 glasses · 2 L",
+        start: "Start hydrating!",
+        left: (n) => `${n} glass${n > 1 ? "es" : ""} left for your goal`,
+        goal: "🎉 Daily goal reached!",
+        addBtn: "+1 glass",
+        toastGoal: "💧 Great job! Hydration goal reached!",
+        toastAlready: "✅ Goal already reached for today!",
+        toastReset: "🌅 New day! Water counter reset.",
+      },
+    };
+    ```
+  </Tab>
+  
+  <Tab title="Notes">
+    ```javascript notes/app.js:38-58
+    const i18n = {
+      fr: {
+        title: "Notes Rapides",
+        placeholder:
+          "Vos idées, tâches, pensées... Sauvegarde automatique.",
+        char: (n) => `${n} caractère${n !== 1 ? "s" : ""}`,
+        saved: "Sauvegardé",
+        clearBtn: "Effacer",
+        confirm: "Effacer toutes les notes ?",
+        toastClear: "🗑️ Notes effacées.",
+      },
+      en: {
+        title: "Quick Notes",
+        placeholder: "Your ideas, tasks, thoughts... Auto-saving.",
+        char: (n) => `${n} character${n !== 1 ? "s" : ""}`,
+        saved: "Saved",
+        clearBtn: "Clear",
+        confirm: "Clear all notes?",
+        toastClear: "🗑️ Notes cleared.",
+      },
+    };
+    ```
+  </Tab>
+</Tabs>
+
+## Translation function
+
+A helper function retrieves translations for the current language:
+
+<CodeGroup>
+```javascript Simple strings
+// pomodoro/app.js:71-73
+function t(key) {
+  return i18n[currentLang][key];
+}
+
+// Usage:
+const pauseText = t("pause");  // "Break" (en) or "Pause" (fr)
+const startText = t("btnStart");  // "Start" (both languages)
+```
+
+```javascript With parameters
+// hydration/app.js:67-70
+function t(key, arg) {
+  const val = i18n[currentLang][key];
+  return typeof val === "function" ? val(arg) : val;
+}
+
+// Usage:
+const status = t("left", 3);  
+// "3 glasses left for your goal" (en)
+// "Plus que 3 verres pour l'objectif" (fr)
+```
+</CodeGroup>
+
+<Note>
+  Functions in the i18n object allow for dynamic content like pluralization and parameter interpolation.
+</Note>
+
+## Language initialization
+
+Widgets load the language preference from localStorage:
+
+```javascript app.js:35-36
+const LANG_KEY = "pa_lang";
+let currentLang = localStorage.getItem(LANG_KEY) || "fr";
+```
+
+## Language toggle implementation
+
+<Tabs>
+  <Tab title="HTML">
+    ```html index.html:34
+    <div class="lang-toggle" id="langToggle">EN</div>
+    ```
+  </Tab>
+  
+  <Tab title="JavaScript">
+    ```javascript pomodoro/app.js:75-82
+    function updateLangUI() {
+      $("langToggle").textContent = currentLang.toUpperCase();
+      $("t-title").textContent = "POMODORO";
+      $("resetBtn").setAttribute("aria-label", t("ariaReset"));
+      $("startBtn").setAttribute("aria-label", t("ariaStart"));
+      $("skipBtn").setAttribute("aria-label", t("ariaSkip"));
+      renderPhase(); // re-render running texts
+    }
+
+    $("langToggle").addEventListener("click", () => {
+      currentLang = currentLang === "fr" ? "en" : "fr";
+      localStorage.setItem(LANG_KEY, currentLang);
+      updateLangUI();
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### How it works
+
+1. **Display current language** - Show "EN" or "FR" in the toggle button
+2. **Toggle on click** - Switch between English and French
+3. **Persist choice** - Save to localStorage
+4. **Update UI** - Call `updateLangUI()` to refresh all translated text
+5. **Re-render dynamic content** - Update any computed or dynamic strings
+
+## Updating UI with translations
+
+The `updateLangUI()` function updates all translatable elements:
+
+<CodeGroup>
+```javascript Static text
+// hydration/app.js:72-78
+function updateLangUI() {
+  $("langToggle").textContent = currentLang.toUpperCase();
+  $("t-title").textContent = t("title");
+  $("t-meta").textContent = t("meta");
+  $("t-add").textContent = t("addBtn");
+  renderWater();
+}
+```
+
+```javascript ARIA labels
+// pomodoro/app.js:78-80
+$("resetBtn").setAttribute("aria-label", t("ariaReset"));
+$("startBtn").setAttribute("aria-label", t("ariaStart"));
+$("skipBtn").setAttribute("aria-label", t("ariaSkip"));
+```
+
+```javascript Placeholders
+// notes/app.js:65-72
+function updateLangUI() {
+  $("langToggle").textContent = currentLang.toUpperCase();
+  $("t-title").textContent = t("title");
+  $("notesArea").placeholder = t("placeholder");
+  $("t-saved").textContent = t("saved");
+  $("t-clear").textContent = t("clearBtn");
+  updateCharCount();
+}
+```
+</CodeGroup>
+
+## Cross-widget synchronization
+
+Language changes sync across all open widgets using the `storage` event:
+
+```javascript app.js:90-95
+window.addEventListener("storage", (e) => {
+  if (e.key === LANG_KEY) {
+    currentLang = e.newValue;
+    updateLangUI();
+  }
+});
+```
+
+<Tip>
+  Change the language in one widget, and all other open widgets update automatically!
+</Tip>
+
+## Translation key patterns
+
+### Naming conventions
+
+<Accordion title="UI elements">
+  ```javascript
+  title: "Widget Title"
+  placeholder: "Enter text here..."
+  meta: "Additional info"
+  ```
+</Accordion>
+
+<Accordion title="Buttons and actions">
+  ```javascript
+  btnStart: "Start"
+  btnPause: "Pause"
+  btnResume: "Resume"
+  clearBtn: "Clear"
+  addBtn: "+1 glass"
+  ```
+</Accordion>
+
+<Accordion title="Status messages">
+  ```javascript
+  start: "Start hydrating!"
+  goal: "🎉 Daily goal reached!"
+  left: (n) => `${n} glasses left`
+  ```
+</Accordion>
+
+<Accordion title="Toast notifications">
+  ```javascript
+  toastGoal: "💧 Great job! Hydration goal reached!"
+  toastAlready: "✅ Goal already reached for today!"
+  toastReset: "🌅 New day! Water counter reset."
+  ```
+</Accordion>
+
+<Accordion title="Accessibility labels">
+  ```javascript
+  ariaReset: "Reset"
+  ariaStart: "Start"
+  ariaSkip: "Skip phase"
+  ```
+</Accordion>
+
+## Pluralization
+
+Handle singular/plural forms using function-based translations:
+
+```javascript hydration/app.js:46-47,58
+left: (n) =>
+  `Plus que ${n} verre${n > 1 ? "s" : ""} pour l'objectif`,
+
+// Usage:
+t("left", 1)  // "Plus que 1 verre pour l'objectif"
+t("left", 3)  // "Plus que 3 verres pour l'objectif"
+```
+
+```javascript notes/app.js:43,52
+char: (n) => `${n} caractère${n !== 1 ? "s" : ""}`,
+
+// Usage:
+t("char", 0)   // "0 caractères"
+t("char", 1)   // "1 caractère"
+t("char", 42)  // "42 caractères"
+```
+
+## Adding localization to a widget
+
+<Steps>
+  <Step title="Create i18n object">
+    Define translations for both languages:
+    
+    ```javascript
+    const i18n = {
+      fr: {
+        title: "Mon Widget",
+        btnAction: "Démarrer",
+        // ... more French strings
+      },
+      en: {
+        title: "My Widget",
+        btnAction: "Start",
+        // ... more English strings
+      },
+    };
+    ```
+  </Step>
+  
+  <Step title="Add translation function">
+    Create the `t()` helper function:
+    
+    ```javascript
+    function t(key, arg) {
+      const val = i18n[currentLang][key];
+      return typeof val === "function" ? val(arg) : val;
+    }
+    ```
+  </Step>
+  
+  <Step title="Load language preference">
+    Initialize from localStorage:
+    
+    ```javascript
+    const LANG_KEY = "pa_lang";
+    let currentLang = localStorage.getItem(LANG_KEY) || "fr";
+    ```
+  </Step>
+  
+  <Step title="Add language toggle">
+    Include the toggle in your HTML:
+    
+    ```html
+    <div class="lang-toggle" id="langToggle">EN</div>
+    ```
+  </Step>
+  
+  <Step title="Implement toggle logic">
+    Add click handler and storage listener:
+    
+    ```javascript
+    function updateLangUI() {
+      $("langToggle").textContent = currentLang.toUpperCase();
+      $("t-title").textContent = t("title");
+      // Update all translatable elements
+    }
+    
+    $("langToggle").addEventListener("click", () => {
+      currentLang = currentLang === "fr" ? "en" : "fr";
+      localStorage.setItem(LANG_KEY, currentLang);
+      updateLangUI();
+    });
+    
+    window.addEventListener("storage", (e) => {
+      if (e.key === LANG_KEY) {
+        currentLang = e.newValue;
+        updateLangUI();
+      }
+    });
+    ```
+  </Step>
+  
+  <Step title="Use translations in code">
+    Replace hardcoded strings with `t()` calls:
+    
+    ```javascript
+    // Instead of:
+    $("title").textContent = "My Widget";
+    
+    // Use:
+    $("title").textContent = t("title");
+    
+    // For dynamic content:
+    showToast(t("toastSuccess"));
+    ```
+  </Step>
+  
+  <Step title="Initialize on load">
+    Call `updateLangUI()` when the widget loads:
+    
+    ```javascript
+    updateLangUI();
+    ```
+  </Step>
+</Steps>
+
+## Best practices
+
+<Accordion title="Complete translations">
+  Ensure every translation key exists in both languages to avoid undefined errors.
+</Accordion>
+
+<Accordion title="Use functions for dynamic content">
+  For pluralization, interpolation, or computed strings:
+  
+  ```javascript
+  left: (n) => `${n} item${n !== 1 ? 's' : ''} remaining`
+  ```
+</Accordion>
+
+<Accordion title="Keep keys semantic">
+  Use descriptive key names that indicate purpose:
+  
+  ```javascript
+  // Good
+  btnSubmit: "Submit"
+  toastSuccess: "✓ Saved successfully!"
+  
+  // Avoid
+  btn1: "Submit"
+  msg1: "✓ Saved successfully!"
+  ```
+</Accordion>
+
+<Accordion title="Update all UI elements">
+  Make sure `updateLangUI()` updates:
+  - Text content
+  - Placeholders
+  - ARIA labels
+  - Dynamic/computed strings
+  - Toast messages
+</Accordion>
+
+<Accordion title="Test both languages">
+  Verify all features work correctly in both English and French, including:
+  - Layout (text might be longer in one language)
+  - Pluralization
+  - Special characters (é, è, à, etc.)
+</Accordion>
+
+<Accordion title="Use emojis consistently">
+  Emojis can stay the same across languages:
+  
+  ```javascript
+  fr: {
+    toastSuccess: "✅ Objectif atteint !"
+  },
+  en: {
+    toastSuccess: "✅ Goal reached!"
+  }
+  ```
+</Accordion>

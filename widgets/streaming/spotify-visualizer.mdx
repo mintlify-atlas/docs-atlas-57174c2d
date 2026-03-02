@@ -1,0 +1,536 @@
+---
+title: Spotify Visualizer
+description: Real-time music visualizer with synced lyrics, album art, and playback controls
+icon: music
+---
+
+## Overview
+
+The Spotify Visualizer displays your currently playing track with:
+
+- **Album artwork** with vinyl animation
+- **Synced lyrics** from LRCLib (auto-scrolling)
+- **Playback controls** (play/pause, skip, shuffle, repeat)
+- **Progress bar** with seek functionality
+- **Responsive layouts:** Full-bleed (M), horizontal (L), dual-column with lyrics (XL)
+
+<Note>
+Requires a **Spotify Premium** account for full playback control features.
+</Note>
+
+## iframe Code
+
+```html
+<iframe src="https://stealthylabshq.github.io/iframe-edge/spotify-visualizer/"></iframe>
+```
+
+## Prerequisites
+
+<Steps>
+  <Step title="Spotify Premium Account">
+    Playback control via the Spotify Web API requires an active Premium subscription. Free accounts can view currently playing tracks but cannot control playback.
+  </Step>
+
+  <Step title="Spotify Developer App">
+    You need to create a Spotify app to get a Client ID.
+  </Step>
+</Steps>
+
+## Setup
+
+<Steps>
+  <Step title="Create Spotify Developer App">
+    1. Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+    2. Log in with your Spotify account
+    3. Click **"Create app"**
+    4. Fill in the form:
+       - **App name:** `iCUE Spotify Visualizer` (or any name)
+       - **App description:** `Personal use for iCUE widgets`
+       - **Website:** Leave blank or use your own
+       - **Redirect URIs:** Add exactly this URL:
+         ```
+         https://stealthylabshq.github.io/iframe-edge/spotify-visualizer/auth/callback.html
+         ```
+    5. Check the **Web API** checkbox
+    6. Agree to terms and click **Save**
+  </Step>
+
+  <Step title="Get Your Client ID">
+    1. Open your newly created app in the dashboard
+    2. Click **"Settings"**
+    3. Copy the **Client ID** (e.g., `4b2f8e1a3c6d...`)
+  </Step>
+
+  <Step title="Add Widget to iCUE">
+    1. Add an **iFrame widget** in iCUE (recommended size: L or XL)
+    2. Paste the iframe code from above
+    3. The widget will load with a setup screen
+  </Step>
+
+  <Step title="Configure & Authorize">
+    1. Click the **Settings** icon (⚙️) in the widget
+    2. Paste your **Client ID**
+    3. Click **"🔑 Authorize & get Refresh Token"**
+    4. A new window opens → log in to Spotify and grant permissions
+    5. You'll be redirected to a callback page showing your refresh token
+    6. Copy the entire token and paste it back in the widget settings
+    7. Click **Save**
+  </Step>
+
+  <Step title="Start Playback">
+    Play any song on Spotify (desktop, mobile, web player, etc.). The widget will automatically detect and display it!
+  </Step>
+</Steps>
+
+<Warning>
+**Redirect URI Must Match Exactly**
+
+Spotify's OAuth requires the redirect URI to match character-for-character. Use:
+
+```
+https://stealthylabshq.github.io/iframe-edge/spotify-visualizer/auth/callback.html
+```
+
+Do not add trailing slashes or modify the URL.
+</Warning>
+
+## Configuration
+
+### Client ID
+
+Your Spotify app's public identifier. This is **not** a secret and can be embedded in the iframe URL.
+
+### Refresh Token
+
+OAuth token that allows the widget to request access tokens without repeated logins.
+
+```javascript spotify-visualizer/app.js
+async function refreshAccessToken() {
+    const cid = localStorage.getItem(LS.CID) || "";
+    const rtkn = getRefreshToken();
+    if (!cid || !rtkn) return false;
+
+    try {
+        const resp = await fetch(TOKEN_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+                grant_type: "refresh_token",
+                refresh_token: rtkn,
+                client_id: cid,
+            }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            if (resp.status === 400 && data.error === "invalid_grant") {
+                // Token revoked/expired — clear and show reconnect prompt
+                stopPolling();
+                clearRefreshToken();
+                state.accessToken = null;
+                state.tokenExpiry = 0;
+                showOverlay("🔒", t("sessionTitle"), t("sessionSub"), t("reconnect"), () => {
+                    hideOverlay();
+                    openSettings();
+                });
+            }
+            return false;
+        }
+        state.accessToken = data.access_token;
+        state.tokenExpiry = Date.now() + (data.expires_in - 30) * 1000;
+        // Spotify sometimes returns a new refresh_token
+        if (data.refresh_token) setRefreshToken(data.refresh_token);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+```
+
+Refresh tokens are stored in **localStorage** and persist across sessions.
+
+### URL Hash Configuration (iCUE Persistence)
+
+The widget encodes your Client ID in the URL hash so it survives iCUE widget switching:
+
+```javascript spotify-visualizer/app.js
+function encodeConfig(cid, rtkn) {
+    try { return btoa(JSON.stringify({ c: cid || "", r: rtkn || "" })); }
+    catch (_) { return ""; }
+}
+
+function updateHashConfig(cid, rtkn) {
+    try {
+        const encoded = encodeConfig(cid, rtkn);
+        if (encoded) {
+            const url = window.location.pathname + window.location.search + HASH_PREFIX + encoded;
+            window.history.replaceState(null, "", url);
+        }
+    } catch (_) { }
+}
+```
+
+When you save settings, the widget updates the URL to:
+```
+https://stealthylabshq.github.io/iframe-edge/spotify-visualizer/#cfg=eyJjIjoiNGIyZjhlMWEzYzZkLi4uIiwiciI6IiJ9
+```
+
+This ensures your Client ID is preserved even when iCUE reloads the iframe.
+
+## Features
+
+### Real-Time Playback Sync
+
+The widget polls Spotify's API every 5 seconds (configurable):
+
+```javascript spotify-visualizer/app.js
+const POLL_MS = 5000;
+
+async function fetchCurrentlyPlaying() {
+    const token = await getAccessToken();
+    if (!token) return null;
+
+    try {
+        // /me/player returns shuffle_state + repeat_state; 204 = no active device
+        const resp = await fetch(API_BASE + "/me/player?additional_types=track", {
+            headers: { Authorization: "Bearer " + token },
+        });
+        if (resp.status === 204) return { is_playing: false };
+        if (resp.status === 401) {
+            // Access token rejected mid-session
+            state.accessToken = null;
+            state.tokenExpiry = 0;
+            return null;
+        }
+        if (!resp.ok) return null;
+        return await resp.json();
+    } catch (_) {
+        return null;
+    }
+}
+```
+
+### Synced Lyrics
+
+Lyrics are fetched from [LRCLib](https://lrclib.net), a free API for synced lyrics:
+
+```javascript spotify-visualizer/app.js
+async function fetchLyrics(artist, title, album, durationSec) {
+    try {
+        // 1. Exact match — fastest
+        const url = new URL(LRCLIB_BASE);
+        url.searchParams.set("artist_name", artist);
+        url.searchParams.set("track_name", title);
+        url.searchParams.set("album_name", album || "");
+        url.searchParams.set("duration", Math.round(durationSec));
+        const resp = await fetch(url.toString());
+        if (resp.ok) {
+            const data = await resp.json();
+            if (data.syncedLyrics) return parseLRC(data.syncedLyrics);
+        }
+
+        // 2. Fallback search — no album/duration required
+        const searchUrl = new URL(LRCLIB_SEARCH);
+        searchUrl.searchParams.set("artist_name", artist);
+        searchUrl.searchParams.set("track_name", title);
+        const searchResp = await fetch(searchUrl.toString());
+        if (!searchResp.ok) return [];
+        const results = await searchResp.json();
+        if (!Array.isArray(results) || results.length === 0) return [];
+
+        const withSynced = results.filter(r => r.syncedLyrics);
+        if (withSynced.length === 0) return [];
+
+        // Pick the entry whose duration is closest
+        withSynced.sort((a, b) =>
+            Math.abs((a.duration || 0) - durationSec) - Math.abs((b.duration || 0) - durationSec)
+        );
+        return parseLRC(withSynced[0].syncedLyrics);
+    } catch (_) {
+        return [];
+    }
+}
+```
+
+**LRC Format:**
+```
+[00:12.00]First line of lyrics
+[00:17.50]Second line of lyrics
+```
+
+Parsed into:
+```javascript
+[
+  { timeMs: 12000, text: "First line of lyrics" },
+  { timeMs: 17500, text: "Second line of lyrics" }
+]
+```
+
+### Auto-Scroll Control
+
+Lyrics auto-scroll to follow the current line:
+
+```javascript spotify-visualizer/app.js
+function highlightLyricLine() {
+    if (!state.lyricsData || state.lyricsData.length === 0) return;
+    const now = state.progressMs;
+    let active = 0;
+    for (let i = 0; i < state.lyricsData.length; i++) {
+        if (state.lyricsData[i].timeMs <= now) active = i;
+        else break;
+    }
+    const lines = $("lyricsScroll").querySelectorAll(".lyric-line");
+    lines.forEach((el, i) => {
+        const dist = Math.abs(i - active);
+        el.classList.toggle("active", i === active);
+        el.classList.toggle("near", dist > 0 && dist <= 2);
+    });
+    // Auto-scroll: follow active line only if auto-scroll is on
+    if (state.autoScroll && lines[active]) {
+        lines[active].scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+}
+```
+
+Users can disable auto-scroll by:
+- Clicking the **AUTO** button
+- Using the up/down arrows
+- Manually scrolling or touching the lyrics area
+
+Auto-scroll automatically resumes after 4 seconds of inactivity.
+
+### Playback Controls
+
+**Play/Pause:**
+```javascript
+$"playBtn").addEventListener("click", () => {
+    if (state.isPlaying) {
+        spotifyAction("PUT", "/me/player/pause");
+    } else {
+        spotifyAction("PUT", "/me/player/play");
+    }
+});
+```
+
+**Skip:**
+```javascript
+$"prevBtn").addEventListener("click", () => { 
+    clearOnSkip(); 
+    spotifyAction("POST", "/me/player/previous"); 
+});
+$"nextBtn").addEventListener("click", () => { 
+    clearOnSkip(); 
+    spotifyAction("POST", "/me/player/next"); 
+});
+```
+
+**Shuffle:**
+```javascript
+$"shuffleBtn").addEventListener("click", async () => {
+    const newState = !state.shuffleOn;
+    await spotifyAction("PUT", `/me/player/shuffle?state=${newState}`);
+    state.shuffleOn = newState;
+    updateShuffleRepeat();
+});
+```
+
+**Repeat:** Cycles through `off` → `context` (all) → `track` (one) → `off`
+
+### Progress Bar & Seek
+
+Click anywhere on the progress bar to seek:
+
+```javascript spotify-visualizer/app.js
+$("progressBar").addEventListener("click", async e => {
+    if (state.durationMs === 0) return;
+    const rect = $("progressBar").getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const posMs = Math.round(pct * state.durationMs);
+    const token = await getAccessToken();
+    if (!token) return;
+    try {
+        await fetch(API_BASE + "/me/player/seek?position_ms=" + posMs, {
+            method: "PUT",
+            headers: { Authorization: "Bearer " + token },
+        });
+        state.progressMs = posMs;
+        renderProgress();
+        highlightLyricLine();
+    } catch (_) { }
+});
+```
+
+### Responsive Layouts
+
+The widget adapts based on container width:
+
+```javascript spotify-visualizer/app.js
+// sz-m  : < 700 px  → full-bleed album art
+// sz-l  : 700–1399  → row: album + track info + controls
+// sz-xl : ≥ 1400 px → left panel + full lyrics column
+
+if (typeof ResizeObserver !== 'undefined') {
+    const ro = new ResizeObserver(entries => {
+        const w = entries[0].contentRect.width;
+        if (w < 700) applySize('sz-m');
+        else if (w < 1400) applySize('sz-l');
+        else applySize('sz-xl');
+    });
+    ro.observe($('widget'));
+}
+```
+
+**M (Mobile):** Vertical layout, album art dominates  
+**L (Large):** Horizontal layout, no lyrics panel  
+**XL (Extra Large):** Dual-column with full lyrics sidebar
+
+### Theme Options
+
+Cycle through three themes with the 🌙 button:
+
+1. **Dark** (default)
+2. **Light**
+3. **Blur** (album art as blurred background)
+
+```javascript spotify-visualizer/app.js
+function applyTheme(th) {
+    const valid = ["dark", "light", "blur"];
+    state.theme = valid.includes(th) ? th : "dark";
+    document.documentElement.setAttribute("data-theme", state.theme);
+    const icons = { dark: "🌙", light: "☀️", blur: "🎨" };
+    $("themeToggle").textContent = icons[state.theme];
+    refreshBgBlur();
+}
+```
+
+## API Details
+
+### Spotify Web API Endpoints
+
+**Get Currently Playing:**
+```
+GET https://api.spotify.com/v1/me/player?additional_types=track
+Authorization: Bearer {access_token}
+```
+
+Returns:
+```json
+{
+  "is_playing": true,
+  "progress_ms": 45000,
+  "item": {
+    "id": "track_id",
+    "name": "Song Title",
+    "artists": [{"name": "Artist"}],
+    "album": {
+      "name": "Album Name",
+      "images": [{"url": "https://..."}]
+    },
+    "duration_ms": 180000
+  },
+  "shuffle_state": false,
+  "repeat_state": "off"
+}
+```
+
+**Playback Control:**
+```
+PUT /me/player/play
+PUT /me/player/pause
+POST /me/player/previous
+POST /me/player/next
+PUT /me/player/seek?position_ms=60000
+PUT /me/player/shuffle?state=true
+PUT /me/player/repeat?state=context
+```
+
+### LRCLib API
+
+**Exact Match:**
+```
+GET https://lrclib.net/api/get?artist_name=Artist&track_name=Song&album_name=Album&duration=180
+```
+
+**Search:**
+```
+GET https://lrclib.net/api/search?artist_name=Artist&track_name=Song
+```
+
+Returns array of matches with `syncedLyrics` field.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Setup Required — Widget won't connect">
+    **Cause:** Missing Client ID or Refresh Token
+
+    **Solution:**
+    1. Make sure you created a Spotify Developer app
+    2. Copy the Client ID from the app settings
+    3. Complete the OAuth flow to get a refresh token
+    4. Paste both into the widget settings
+  </Accordion>
+
+  <Accordion title="Session expired / Token revoked">
+    **Cause:** Spotify revoked your refresh token or it expired
+
+    **Solution:**
+    1. Click **Reconnect** in the widget
+    2. Re-authorize through Settings → Authorize button
+    3. Paste the new refresh token
+  </Accordion>
+
+  <Accordion title="Lyrics not showing">
+    **Possible causes:**
+    - Lyrics not available in LRCLib database
+    - Track changed too quickly
+    - Widget size is M (lyrics only show in L/XL)
+
+    **Solution:**
+    - Ensure you're using size L or XL in iCUE
+    - LRCLib has limited coverage for some songs
+    - Try switching to a popular song to test
+  </Accordion>
+
+  <Accordion title="Controls don't work">
+    **Cause:** Spotify Premium required for playback control
+
+    **Solution:**
+    Free Spotify accounts can view currently playing tracks but cannot control playback. Upgrade to Premium.
+  </Accordion>
+
+  <Accordion title="Widget shows 'Not playing'">
+    **Possible causes:**
+    - No active Spotify device
+    - Playback is paused on all devices
+    - Private session enabled
+
+    **Solution:**
+    1. Start playback on any Spotify app (desktop, mobile, web)
+    2. Make sure the device is active (not in private session)
+    3. Wait 5 seconds for the widget to poll
+  </Accordion>
+</AccordionGroup>
+
+## Source Code Reference
+
+- **HTML:** `/spotify-visualizer/index.html` (202 lines)
+- **JavaScript:** `/spotify-visualizer/app.js` (932 lines)
+- **CSS:** `/spotify-visualizer/css/widget.css`
+- **Login flow:** `/spotify-visualizer/auth/login.html`
+- **Callback:** `/spotify-visualizer/auth/callback.html`
+
+**Key constants:**
+```javascript
+const LOGIN_URL = "https://stealthylabshq.github.io/iframe-edge/spotify-visualizer/auth/login.html";
+const TOKEN_URL = "https://accounts.spotify.com/api/token";
+const API_BASE = "https://api.spotify.com/v1";
+const LRCLIB_BASE = "https://lrclib.net/api/get";
+const LRCLIB_SEARCH = "https://lrclib.net/api/search";
+const POLL_MS = 5000;
+```
+
+**localStorage keys:**
+- `pa_spotify_client_id` — Spotify Client ID
+- `pa_spotify_refresh_token` — OAuth refresh token
+- `pa_theme` — Theme (dark/light/blur)
+- `pa_lang` — Language (en/fr)

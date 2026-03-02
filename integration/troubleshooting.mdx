@@ -1,0 +1,644 @@
+---
+title: "Troubleshooting"
+description: "Common issues and solutions for widget integration, iCUE setup, localStorage, API keys, and browser compatibility"
+---
+
+## Widget Not Loading
+
+<Accordion title="Widget shows blank screen or doesn't appear">
+
+**Symptoms:**
+- iCUE integration shows empty space
+- Widget container is visible but no content
+- Console errors about failed resources
+
+**Common Causes:**
+
+1. **Incorrect URL in iCUE**
+   - Verify the URL points to the correct HTML file
+   - Check for typos in the path
+   - Ensure the protocol matches (file:// or https://)
+
+2. **Content Security Policy blocking resources**
+
+   Widgets use strict CSP headers. Check for violations in the browser console:
+
+   ```html
+   <!-- From source/productivity/timer/index.html:7-8 -->
+   <meta http-equiv="Content-Security-Policy"
+     content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests" />
+   ```
+
+3. **Missing dependencies**
+   - Verify `theme-loader.js` exists in the correct path
+   - Check that CSS files are accessible
+   - Ensure font resources (Google Fonts) can load
+
+**Solutions:**
+
+- **Check browser console** (F12) for specific errors
+- **Verify file paths**: Open the URL directly in a browser
+- **Test locally**: Load the HTML file outside iCUE first
+- **Check CSP errors**: Look for "Content Security Policy" warnings
+
+</Accordion>
+
+<Accordion title="Widget loads but shows setup/config screen">
+
+**Symptoms:**
+- Widget displays "Setup Required" or similar message
+- No error in console
+- Widget UI is visible but inactive
+
+**Causes & Solutions:**
+
+**Spotify Visualizer:**
+```javascript
+// Missing Client ID or Refresh Token
+// Check localStorage for:
+localStorage.getItem("pa_spotify_clientId")
+localStorage.getItem("pa_spotify_refreshToken")
+```
+
+**AI Assistant:**
+```javascript
+// Missing API key (stored in sessionStorage for security)
+sessionStorage.getItem("pa_ai_key_gemini_session")
+sessionStorage.getItem("pa_ai_key_claude_session")
+sessionStorage.getItem("pa_ai_key_openai_session")
+```
+
+**Action:** Open widget settings and configure required credentials.
+
+</Accordion>
+
+## iCUE Integration Issues
+
+<Accordion title="How to add a widget to iCUE">
+
+**Step-by-step:**
+
+1. **Locate widget files**
+   - Download or clone the widget repository
+   - Note the full path to the widget's `index.html`
+
+2. **Open iCUE settings**
+   - Launch Corsair iCUE software
+   - Navigate to device settings
+
+3. **Add custom integration**
+   - Find "Custom" or "Web Integration" option
+   - Paste the file URL or HTTPS URL
+
+4. **URL format examples:**
+   ```
+   file:///C:/Users/YourName/widgets/timer/index.html
+   https://your-domain.com/widgets/timer/index.html
+   ```
+
+5. **Save and apply**
+   - Widget should appear in iCUE interface
+   - Refresh if needed
+
+</Accordion>
+
+<Accordion title="Widget URL format issues">
+
+**Symptoms:**
+- iCUE rejects the URL
+- Widget loads but has security errors
+- Mixed content warnings
+
+**Valid URL formats:**
+
+```
+// Local file (Windows)
+file:///C:/path/to/widget/index.html
+
+// Local file (Mac)
+file:///Users/username/path/to/widget/index.html
+
+// Local file (Linux)
+file:///home/username/path/to/widget/index.html
+
+// HTTPS (production)
+https://example.com/widgets/timer/index.html
+```
+
+**Invalid formats:**
+```
+❌ file://C:/path/to/widget  (missing third slash)
+❌ http://example.com/widget  (HTTP not allowed, use HTTPS)
+❌ C:\path\to\widget  (Windows path, not URL)
+```
+
+<Tip>
+Use forward slashes (/) even on Windows when constructing file:// URLs.
+</Tip>
+
+</Accordion>
+
+## Settings Not Persisting
+
+<Accordion title="Theme/language resets on reload">
+
+**Symptoms:**
+- Settings return to default (French, Dark mode)
+- Custom configurations lost
+- Widget state doesn't save
+
+**Cause 1: Private Browsing Mode**
+
+```javascript
+// localStorage is disabled or cleared on session end
+try {
+  localStorage.setItem("test", "1");
+  localStorage.removeItem("test");
+} catch (e) {
+  console.error("localStorage not available:", e);
+}
+```
+
+**Solution:** Disable private/incognito mode
+
+**Cause 2: Storage Quota Exceeded**
+
+```javascript
+// From source - widgets handle quota gracefully
+function saveConversations() {
+  try {
+    state.conversations = state.conversations.slice(0, MAX_CONVS);
+    localStorage.setItem(LS.CONVS, JSON.stringify(state.conversations));
+  } catch (_) { /* localStorage full — fail silently */ }
+}
+```
+
+**Solution:** Clear old data
+```javascript
+// Remove large items
+localStorage.removeItem("pa_ai_conversations");
+localStorage.removeItem("timer_v1");
+```
+
+**Cause 3: Browser Extension Blocking**
+
+Some privacy extensions block localStorage access.
+
+**Solution:** 
+- Disable extensions temporarily
+- Whitelist the widget domain
+- Check console for "blocked by extension" messages
+
+</Accordion>
+
+<Accordion title="localStorage cleared unexpectedly">
+
+**Symptoms:**
+- All widgets reset simultaneously
+- Settings lost after browser restart
+- Data disappears randomly
+
+**Common Causes:**
+
+1. **Browser cleanup on exit**
+   - Some browsers clear storage when closing
+   - Check browser settings for "Clear on exit"
+
+2. **Disk quota management**
+   - OS may clear storage under disk pressure
+   - Check available disk space
+
+3. **Antivirus/Security software**
+   - May quarantine or clear browser storage
+   - Check security logs
+
+**Prevention:**
+
+- Disable automatic cache clearing
+- Export important data periodically
+- Use browser profiles for persistent storage
+
+</Accordion>
+
+## API Key Issues
+
+<Accordion title="AI Assistant: Invalid API key errors">
+
+**Symptoms:**
+```
+Error — check your API key
+HTTP 401 Unauthorized
+HTTP 403 Forbidden
+```
+
+**Diagnosis by Provider:**
+
+**Gemini (Google AI):**
+```javascript
+// Check if key is set
+const key = sessionStorage.getItem("pa_ai_key_gemini_session");
+console.log("Gemini key:", key ? "Set (" + key.length + " chars)" : "Missing");
+
+// Valid format: AIza...
+// Get from: https://aistudio.google.com/app/apikey
+```
+
+**Claude (Anthropic):**
+```javascript
+const key = sessionStorage.getItem("pa_ai_key_claude_session");
+console.log("Claude key:", key ? "Set (" + key.length + " chars)" : "Missing");
+
+// Valid format: sk-ant-...
+// Get from: https://console.anthropic.com/settings/keys
+```
+
+**OpenAI:**
+```javascript
+const key = sessionStorage.getItem("pa_ai_key_openai_session");
+console.log("OpenAI key:", key ? "Set (" + key.length + " chars)" : "Missing");
+
+// Valid format: sk-...
+// Get from: https://platform.openai.com/api-keys
+```
+
+**Solutions:**
+
+1. **Verify key format** - Check for extra spaces or incomplete paste
+2. **Regenerate key** - Old keys may be revoked
+3. **Check API quotas** - Free tiers have usage limits
+4. **Test key directly** - Use provider's API playground
+
+</Accordion>
+
+<Accordion title="Spotify: Authentication failures">
+
+**Symptoms:**
+- "Setup Required" persists after configuration
+- "Invalid token" or "Unauthorized" errors
+- Widget can't fetch playback state
+
+**Required Credentials:**
+
+```javascript
+localStorage.getItem("pa_spotify_clientId")     // From Spotify Dashboard
+localStorage.getItem("pa_spotify_refreshToken") // From OAuth flow
+```
+
+**Setup Process:**
+
+1. **Create Spotify App**
+   - Go to https://developer.spotify.com/dashboard
+   - Create new app
+   - Note Client ID
+   - Add redirect URI: `http://localhost:8888/callback`
+
+2. **Authorize and Get Refresh Token**
+   ```javascript
+   // Click "Authorize & get Refresh Token" in widget settings
+   // Widget opens: auth/login.html
+   // After auth: auth/callback.html displays refresh token
+   ```
+
+3. **Save Credentials**
+   - Paste Client ID in settings
+   - Paste Refresh Token from callback page
+   - Click Save
+
+**Common Mistakes:**
+
+- ❌ Using Client Secret instead of Client ID
+- ❌ Copying access token instead of refresh token
+- ❌ Incorrect redirect URI in Spotify Dashboard
+- ❌ App not published/approved in Dashboard
+
+</Accordion>
+
+## Content Security Policy (CSP)
+
+<Accordion title="Understanding CSP errors">
+
+**What is CSP?**
+
+Content Security Policy headers protect widgets from XSS attacks by restricting resource loading.
+
+**Widget CSP Examples:**
+
+**Timer Widget (strict, local only):**
+```html
+<!-- From source/productivity/timer/index.html:7-8 -->
+<meta http-equiv="Content-Security-Policy"
+  content="default-src 'self'; 
+           script-src 'self'; 
+           style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
+           font-src 'self' https://fonts.gstatic.com; 
+           img-src 'self' data:; 
+           object-src 'none'; 
+           base-uri 'none'; 
+           form-action 'self'; 
+           frame-ancestors 'self'; 
+           upgrade-insecure-requests" />
+```
+
+**AI Assistant (allows HTTPS APIs):**
+```html
+<!-- From source/ai-assistant/index.html:9-10 -->
+<meta http-equiv="Content-Security-Policy"
+  content="default-src 'self'; 
+           script-src 'self'; 
+           style-src 'self' https://fonts.googleapis.com; 
+           font-src 'self' https://fonts.gstatic.com; 
+           img-src 'self' data: https:; 
+           connect-src 'self' https://generativelanguage.googleapis.com https://api.anthropic.com https://api.openai.com https:; 
+           object-src 'none'; 
+           base-uri 'none'; 
+           form-action 'none'; 
+           frame-ancestors 'self'; 
+           upgrade-insecure-requests; 
+           block-all-mixed-content;" />
+```
+
+**Key Directives:**
+
+- `script-src 'self'` - Only load scripts from same origin
+- `connect-src` - Allowed API endpoints
+- `style-src 'unsafe-inline'` - Allows inline CSS for dynamic theming
+- `upgrade-insecure-requests` - Auto-upgrade HTTP to HTTPS
+- `frame-ancestors 'self'` - Prevent embedding from other origins
+
+</Accordion>
+
+<Accordion title="Fixing CSP violations">
+
+**Common Errors:**
+
+```
+Refused to load script from 'https://example.com/script.js' 
+because it violates the following CSP directive: "script-src 'self'"
+```
+
+**Solutions:**
+
+1. **Use local resources**
+   - Download external scripts/styles locally
+   - Serve from same origin as widget
+
+2. **Modify CSP (if you control the widget)**
+   ```html
+   <!-- Add allowed domain -->
+   <meta http-equiv="Content-Security-Policy"
+     content="... script-src 'self' https://trusted-cdn.com; ..." />
+   ```
+
+3. **Use inline scripts carefully**
+   ```html
+   <!-- Requires 'unsafe-inline' -->
+   <script>/* inline code */</script>
+   ```
+
+<Warning>
+Never use `'unsafe-inline'` for `script-src` - it defeats CSP's XSS protection. Widgets only use it for `style-src` to enable dynamic theming.
+</Warning>
+
+</Accordion>
+
+## Browser Compatibility
+
+<Accordion title="Supported browsers and features">
+
+**Minimum Requirements:**
+
+- Modern browser with ES6+ support
+- localStorage/sessionStorage enabled
+- Fetch API for network requests
+- CSS Grid and Custom Properties
+
+**Tested Browsers:**
+
+- Chrome/Edge 90+
+- Firefox 88+
+- Safari 14+
+- Brave (Chromium-based)
+
+**Known Issues:**
+
+**Safari:**
+- localStorage limits stricter (2.5MB vs 10MB)
+- Private browsing fully blocks localStorage
+- May require user gesture for audio playback
+
+**Firefox:**
+- CSP error messages more verbose
+- Storage events may have slight delay
+
+**Internet Explorer:**
+- ❌ Not supported (lacks ES6, Fetch, CSS Grid)
+
+</Accordion>
+
+<Accordion title="File:// protocol limitations">
+
+**Symptoms:**
+- CORS errors when loading from file://
+- localStorage may not work
+- Fetch requests fail
+
+**Causes:**
+
+Browsers apply strict security to file:// protocol:
+- Each file:// URL is a separate origin
+- No CORS headers available
+- localStorage may be sandboxed
+
+**Solutions:**
+
+1. **Use HTTPS hosting**
+   - Deploy widgets to a web server
+   - Access via https:// URLs
+   - Full browser features enabled
+
+2. **Run local web server**
+   ```bash
+   # Python 3
+   python -m http.server 8000
+   
+   # Node.js (with http-server)
+   npx http-server -p 8000
+   
+   # Access at: http://localhost:8000/widget/index.html
+   ```
+
+3. **Browser flags (development only)**
+   ```bash
+   # Chrome - disable web security (UNSAFE, dev only)
+   chrome.exe --disable-web-security --user-data-dir="/tmp/chrome_dev"
+   ```
+
+<Warning>
+Never browse the web with `--disable-web-security` enabled. Only use for local widget testing.
+</Warning>
+
+</Accordion>
+
+## Debug Tips
+
+<Accordion title="Essential debugging tools">
+
+**Browser DevTools (F12):**
+
+1. **Console Tab**
+   - JavaScript errors and warnings
+   - console.log() output
+   - CSP violation messages
+
+2. **Network Tab**
+   - Failed resource loads
+   - API request/response inspection
+   - CORS errors
+
+3. **Application/Storage Tab**
+   - View localStorage keys and values
+   - Inspect sessionStorage
+   - Monitor cookies (if used)
+
+4. **Elements Tab**
+   - Verify HTML structure loaded
+   - Check applied CSS styles
+   - Inspect data-theme attribute
+
+**Common Debug Commands:**
+
+```javascript
+// Check all localStorage keys
+for (let i = 0; i < localStorage.length; i++) {
+  const key = localStorage.key(i);
+  console.log(key, localStorage.getItem(key));
+}
+
+// Verify theme/language
+console.log("Theme:", localStorage.getItem("pa_theme"));
+console.log("Lang:", localStorage.getItem("pa_lang"));
+console.log("Applied theme:", document.documentElement.getAttribute("data-theme"));
+
+// Check API keys (AI Assistant)
+console.log("Gemini:", sessionStorage.getItem("pa_ai_key_gemini_session") ? "Set" : "Missing");
+console.log("Claude:", sessionStorage.getItem("pa_ai_key_claude_session") ? "Set" : "Missing");
+
+// Force theme change
+localStorage.setItem("pa_theme", "light");
+location.reload();
+```
+
+</Accordion>
+
+<Accordion title="Logging network requests">
+
+**Enable detailed fetch logging:**
+
+```javascript
+// Intercept fetch for debugging
+const originalFetch = window.fetch;
+window.fetch = function(...args) {
+  console.log("Fetch:", args[0], args[1]);
+  return originalFetch.apply(this, args)
+    .then(res => {
+      console.log("Response:", res.status, res.statusText);
+      return res;
+    })
+    .catch(err => {
+      console.error("Fetch error:", err);
+      throw err;
+    });
+};
+```
+
+**Check AI API requests:**
+
+```javascript
+// Monitor streaming responses
+// From source/ai-assistant/app.js - Gemini example
+const url = `${GEMINI_BASE}/${model}:streamGenerateContent?alt=sse`;
+console.log("Requesting:", url);
+console.log("Headers:", {
+  "Content-Type": "application/json",
+  "x-goog-api-key": key.slice(0, 10) + "..."
+});
+```
+
+</Accordion>
+
+<Accordion title="Performance profiling">
+
+**Identify slow operations:**
+
+```javascript
+// Time localStorage operations
+console.time("loadState");
+const state = JSON.parse(localStorage.getItem("timer_v1"));
+console.timeEnd("loadState");
+
+// Profile rendering
+console.time("renderAll");
+renderPhaseUI();
+renderTimer();
+renderControls();
+console.timeEnd("renderAll");
+```
+
+**Memory usage:**
+
+```javascript
+// Estimate localStorage size
+let totalSize = 0;
+for (let key in localStorage) {
+  if (localStorage.hasOwnProperty(key)) {
+    totalSize += localStorage[key].length + key.length;
+  }
+}
+console.log("localStorage size:", (totalSize / 1024).toFixed(2), "KB");
+```
+
+</Accordion>
+
+## Getting Help
+
+<Note>
+Before reporting issues:
+
+1. Check browser console for errors
+2. Verify localStorage is enabled
+3. Test in a different browser
+4. Clear localStorage and retry
+5. Confirm widget works outside iCUE
+</Note>
+
+**Useful Information for Bug Reports:**
+
+- Browser name and version
+- Operating system
+- iCUE version (if applicable)
+- Widget name and version
+- Console error messages
+- Steps to reproduce
+- localStorage contents (redact sensitive keys)
+
+**Export Debug Info:**
+
+```javascript
+// Collect diagnostic data
+const debug = {
+  browser: navigator.userAgent,
+  localStorage: {},
+  sessionStorage: {},
+  theme: document.documentElement.getAttribute("data-theme")
+};
+
+for (let i = 0; i < localStorage.length; i++) {
+  const key = localStorage.key(i);
+  // Redact sensitive values
+  debug.localStorage[key] = key.includes("key") || key.includes("token") 
+    ? "[REDACTED]" 
+    : localStorage.getItem(key);
+}
+
+console.log(JSON.stringify(debug, null, 2));
+```

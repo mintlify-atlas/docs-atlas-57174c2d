@@ -1,0 +1,245 @@
+---
+title: Widget Sizing
+description: Understanding widget sizes and how to choose the right dimensions for your dashboard
+---
+
+## Available Widget Sizes
+
+When adding an iFrame widget in Corsair iCUE, you can choose from three size options:
+
+- **M (Medium)** - Compact size for quick-glance information
+- **L (Large)** - Standard size for most interactive widgets
+- **XL (Extra Large)** - Maximum size for detailed content and complex interfaces
+
+All iframe-edge widgets are **fully responsive** and automatically adapt their layout to fit the selected container size.
+
+<Info>
+Widget sizes are determined by iCUE's dashboard grid system. The actual pixel dimensions may vary depending on your display resolution and iCUE settings.
+</Info>
+
+## Size Characteristics
+
+### M (Medium)
+
+**Best for:**
+- Quick reference widgets (clock, weather)
+- Simple counters and trackers
+- Minimal interaction widgets
+- Maximizing dashboard real estate
+
+**Characteristics:**
+- Compact interface elements
+- Essential information only
+- Limited space for controls
+- Quick-glance readability
+
+**Recommended widgets:**
+- Hydration tracker
+- Posture & Blink reminders
+- Quick Clipboard (minimal view)
+
+<Note>
+Some widgets may hide secondary features in M size to maintain usability. Always test your widget after selecting a size.
+</Note>
+
+### L (Large)
+
+**Best for:**
+- Standard productivity widgets
+- Interactive tools with controls
+- Balanced information density
+- Most common use cases
+
+**Characteristics:**
+- Comfortable interface sizing
+- Full feature access for most widgets
+- Good balance of space and functionality
+- Recommended default for most widgets
+
+**Recommended widgets:**
+- Pomodoro timer
+- Budget tracker
+- Quick Notes
+- Daily Focus
+- Habit Tracker
+- AI Assistant
+
+<Info>
+L size is the recommended starting point for most iframe-edge widgets. It provides the best balance between screen space and widget functionality.
+</Info>
+
+### XL (Extra Large)
+
+**Best for:**
+- Complex visualizations
+- Rich media content
+- Widgets with multiple panels
+- Primary focus applications
+
+**Characteristics:**
+- Maximum screen space
+- Full feature set available
+- Optimal for detailed content
+- May limit number of widgets on dashboard
+
+**Recommended widgets:**
+- Spotify Visualizer (with lyrics panel)
+- AI Assistant (extended chat view)
+- Budget tracker (detailed view)
+- Quick Notes (multiple notes visible)
+
+<Warning>
+XL widgets take up significant dashboard space. Consider your overall dashboard layout before choosing XL size.
+</Warning>
+
+## How Widgets Respond to Sizes
+
+iframe-edge widgets use responsive design principles to adapt to different sizes:
+
+### Layout Adaptation
+
+- **M size**: Widgets typically show a vertical/stacked layout with minimal controls
+- **L size**: Widgets can use more horizontal space and display additional controls
+- **XL size**: Widgets expand to show full interfaces with optional panels and features
+
+### Font Scaling
+
+Widgets automatically adjust font sizes to maintain readability:
+- Text remains legible at all sizes
+- Headings scale proportionally
+- Controls remain touch-friendly (if applicable)
+
+### Feature Availability
+
+Some widgets show different features based on size:
+- **M**: Core functionality only
+- **L**: Standard feature set
+- **XL**: All features including optional panels
+
+<Note>
+All iframe-edge widgets are built with CSS media queries and flexible layouts to ensure they look great at any size.
+</Note>
+
+## Choosing the Right Size
+
+Consider these factors when selecting a widget size:
+
+### Dashboard Layout
+
+- **How many widgets?** More widgets = smaller sizes needed
+- **Primary vs. secondary widgets** - XL for primary, M/L for secondary
+- **Visual hierarchy** - Use size to indicate importance
+
+### Widget Type
+
+- **Information density** - Complex widgets need more space
+- **Interaction frequency** - Frequently used widgets benefit from larger sizes
+- **Content type** - Visual content (Spotify) needs more space than simple counters
+
+### Use Case
+
+- **Quick glance** - M size is sufficient
+- **Active work** - L or XL for comfortable interaction
+- **Background monitoring** - M or L depending on information density
+
+### Example Dashboard Layouts
+
+**Productivity Focus:**
+- 1x XL: Pomodoro timer (main focus)
+- 2x L: Quick Notes, Daily Focus
+- 2x M: Hydration, Posture reminder
+
+**Entertainment Setup:**
+- 1x XL: Spotify Visualizer
+- 1x L: Quick Notes
+- 2x M: Hydration, Quick Clipboard
+
+**Balanced Layout:**
+- 3x L: AI Assistant, Habit Tracker, Budget
+- 2x M: Hydration, Posture reminder
+
+## Widget-Specific Sizing Notes
+
+### Spotify Visualizer
+
+- **M/L**: Shows album art and controls
+- **XL**: Adds lyrics panel on the side (if available)
+
+<Info>
+For the best Spotify experience with lyrics, use XL size. The lyrics panel is only visible in XL mode.
+</Info>
+
+### AI Assistant
+
+- **M**: Compact chat (limited message history visible)
+- **L**: Standard chat view (recommended)
+- **XL**: Extended chat with more message history and wider input area
+
+### Quick Notes
+
+- **M**: Single note view
+- **L**: 2-3 notes visible
+- **XL**: Grid view with multiple notes simultaneously
+
+### Budget Tracker
+
+- **M**: Current balance only
+- **L**: Balance + recent transactions
+- **XL**: Full dashboard with charts and analytics
+
+### Pomodoro Timer
+
+- **M**: Timer display only
+- **L**: Timer + controls + session history
+- **XL**: Full interface with statistics and settings
+
+### Habit Tracker
+
+- **M**: Today's habits only
+- **L**: Week view with streak information
+- **XL**: Month view with detailed statistics
+
+## Layout Considerations
+
+### Aspect Ratios
+
+iCUE widget containers typically maintain specific aspect ratios:
+- Widgets are designed to work within these constraints
+- Content may appear letterboxed in extreme aspect ratios
+- Test your layout after adding widgets
+
+### Dashboard Grid
+
+iCUE uses a grid-based layout system:
+- Widgets snap to grid positions
+- Sizes are measured in grid units
+- Some size combinations may not fit perfectly
+
+### Multiple Displays
+
+If using multiple Xeneon Edge displays:
+- Keep similar widget sizes on each display for visual consistency
+- Or use one display for XL primary widgets and another for multiple M/L widgets
+- Maintain visual balance across displays
+
+<Note>
+You can change widget sizes at any time in iCUE. Experiment to find the layout that works best for your workflow.
+</Note>
+
+## Performance Considerations
+
+Widget size can affect performance:
+
+- **Smaller widgets (M)**: Lower resource usage, more widgets possible
+- **Larger widgets (XL)**: Higher resource usage, especially for complex visualizations
+- **Recommended**: Mix sizes to balance functionality and performance
+
+<Warning>
+If you experience performance issues, try reducing the number of XL widgets or switching some widgets to L or M size.
+</Warning>
+
+## Next Steps
+
+- Explore individual widget guides for size-specific features
+- Experiment with different layouts on your dashboard
+- Check widget-specific documentation for optimal size recommendations

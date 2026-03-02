@@ -1,0 +1,328 @@
+---
+title: Theming
+description: Dark/light mode system implementation using CSS custom properties
+icon: palette
+---
+
+## Overview
+
+All iframe-edge widgets support **dark and light themes** using a centralized theming system. Themes are stored in localStorage and synchronized across all widgets automatically.
+
+## Theme system architecture
+
+The theming system consists of:
+
+1. **theme-loader.js** - Loads theme before page renders (prevents FOUC)
+2. **Theme toggle** - User interface for switching themes
+3. **CSS custom properties** - Theme-aware color variables
+4. **localStorage** - Persistent theme preference
+
+## Theme loader implementation
+
+The `theme-loader.js` script runs before the DOM is fully loaded to prevent a flash of unstyled content:
+
+```javascript theme-loader.js:1-13
+(function () {
+  "use strict";
+
+  try {
+    var theme = localStorage.getItem("pa_theme") || "dark";
+    if (theme !== "dark" && theme !== "light" && theme !== "blur") {
+      theme = "dark";
+    }
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (_) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+})();
+```
+
+<Accordion title="Why this runs in the head">
+  Loading the theme script in `<head>` ensures the correct theme is applied before any content renders:
+  
+  ```html index.html:5
+  <script src="../theme-loader.js"></script>
+  ```
+  
+  This prevents users from seeing a brief flash of the wrong theme.
+</Accordion>
+
+## Theme storage key
+
+All widgets use a consistent localStorage key:
+
+```javascript
+const THEME_KEY = "pa_theme";
+```
+
+**Possible values:**
+- `"dark"` - Dark theme (default)
+- `"light"` - Light theme
+- `"blur"` - Blur theme (some widgets)
+
+## CSS custom properties approach
+
+Themes are implemented using CSS custom properties (CSS variables) that change based on the `data-theme` attribute:
+
+<CodeGroup>
+```css Dark theme
+:root[data-theme="dark"] {
+  --bg-1: #0a0a0a;
+  --bg-2: #141414;
+  --bg-3: #1e1e1e;
+  --text-1: #ffffff;
+  --text-2: #b4b4b4;
+  --text-3: #6e6e6e;
+  --accent: #00d4ff;
+  --border: #2a2a2a;
+}
+```
+
+```css Light theme
+:root[data-theme="light"] {
+  --bg-1: #ffffff;
+  --bg-2: #f5f5f5;
+  --bg-3: #e5e5e5;
+  --text-1: #0a0a0a;
+  --text-2: #4a4a4a;
+  --text-3: #8a8a8a;
+  --accent: #0099cc;
+  --border: #d4d4d4;
+}
+```
+
+```css Using variables
+.widget {
+  background: var(--bg-1);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+}
+
+.mod-header {
+  background: var(--bg-2);
+}
+
+.btn {
+  color: var(--text-2);
+}
+
+.btn:hover {
+  color: var(--accent);
+}
+```
+</CodeGroup>
+
+## Theme toggle implementation
+
+Every widget includes a theme toggle button in the header:
+
+<Tabs>
+  <Tab title="HTML">
+    ```html index.html:31-33
+    <div class="lang-toggle" id="themeToggle" style="margin-left: auto">
+      🌙
+    </div>
+    ```
+  </Tab>
+  
+  <Tab title="JavaScript">
+    ```javascript app.js:12-24
+    const THEME_KEY = "pa_theme";
+    let currentTheme = localStorage.getItem(THEME_KEY) || "dark";
+
+    function updateThemeUI() {
+      $("themeToggle").textContent = currentTheme === "dark" ? "🌙" : "☀️";
+      document.documentElement.setAttribute("data-theme", currentTheme);
+    }
+
+    $("themeToggle").addEventListener("click", () => {
+      currentTheme = currentTheme === "dark" ? "light" : "dark";
+      localStorage.setItem(THEME_KEY, currentTheme);
+      updateThemeUI();
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### How it works
+
+1. **Load saved theme** - Read from localStorage or default to "dark"
+2. **Update UI** - Show moon (🌙) for dark theme, sun (☀️) for light theme
+3. **Toggle on click** - Switch between dark and light
+4. **Persist choice** - Save to localStorage
+5. **Apply theme** - Set `data-theme` attribute on `<html>` element
+
+## Cross-widget synchronization
+
+When you change the theme in one widget, all other open widgets update automatically using the `storage` event:
+
+```javascript app.js:26-31
+window.addEventListener("storage", (e) => {
+  if (e.key === THEME_KEY) {
+    currentTheme = e.newValue;
+    updateThemeUI();
+  }
+});
+```
+
+<Note>
+  The `storage` event only fires in **other** windows/tabs, not the one that made the change. That's why we call `updateThemeUI()` directly in the click handler.
+</Note>
+
+## Theme initialization
+
+Widgets initialize the theme on page load:
+
+```javascript app.js:33
+updateThemeUI();
+```
+
+This ensures:
+- The theme toggle shows the correct icon
+- The `data-theme` attribute is set
+- The UI reflects the stored preference
+
+## Data attribute approach
+
+Themes use the `data-theme` attribute instead of CSS classes:
+
+```javascript theme-loader.js:9
+document.documentElement.setAttribute("data-theme", theme);
+```
+
+**Advantages:**
+- Semantic - clearly indicates this is theme data
+- Single source of truth
+- Easy to query: `document.documentElement.dataset.theme`
+- Works with CSS attribute selectors: `[data-theme="dark"]`
+
+## Adding theme support to a widget
+
+<Steps>
+  <Step title="Include theme-loader.js">
+    Add the script in your HTML `<head>`:
+    
+    ```html
+    <script src="../theme-loader.js"></script>
+    ```
+  </Step>
+  
+  <Step title="Add theme toggle button">
+    Include the toggle in your widget header:
+    
+    ```html
+    <div class="lang-toggle" id="themeToggle" style="margin-left: auto">
+      🌙
+    </div>
+    ```
+  </Step>
+  
+  <Step title="Implement toggle logic">
+    Add the JavaScript code for theme management:
+    
+    ```javascript
+    const THEME_KEY = "pa_theme";
+    let currentTheme = localStorage.getItem(THEME_KEY) || "dark";
+    
+    function updateThemeUI() {
+      $("themeToggle").textContent = currentTheme === "dark" ? "🌙" : "☀️";
+      document.documentElement.setAttribute("data-theme", currentTheme);
+    }
+    
+    $("themeToggle").addEventListener("click", () => {
+      currentTheme = currentTheme === "dark" ? "light" : "dark";
+      localStorage.setItem(THEME_KEY, currentTheme);
+      updateThemeUI();
+    });
+    
+    window.addEventListener("storage", (e) => {
+      if (e.key === THEME_KEY) {
+        currentTheme = e.newValue;
+        updateThemeUI();
+      }
+    });
+    
+    updateThemeUI();
+    ```
+  </Step>
+  
+  <Step title="Define CSS custom properties">
+    Create theme-specific color variables in your CSS:
+    
+    ```css
+    :root[data-theme="dark"] {
+      --bg-1: #0a0a0a;
+      --text-1: #ffffff;
+      /* ... more variables */
+    }
+    
+    :root[data-theme="light"] {
+      --bg-1: #ffffff;
+      --text-1: #0a0a0a;
+      /* ... more variables */
+    }
+    ```
+  </Step>
+  
+  <Step title="Use variables in styles">
+    Reference the variables throughout your CSS:
+    
+    ```css
+    .widget {
+      background: var(--bg-1);
+      color: var(--text-1);
+    }
+    ```
+  </Step>
+</Steps>
+
+## Best practices
+
+<Accordion title="Use semantic variable names">
+  Name variables by purpose, not appearance:
+  
+  ```css
+  /* Good */
+  --text-primary: #ffffff;
+  --text-secondary: #b4b4b4;
+  
+  /* Avoid */
+  --white: #ffffff;
+  --gray: #b4b4b4;
+  ```
+</Accordion>
+
+<Accordion title="Fail gracefully">
+  Always handle localStorage errors:
+  
+  ```javascript
+  try {
+    var theme = localStorage.getItem("pa_theme") || "dark";
+  } catch (_) {
+    var theme = "dark";
+  }
+  ```
+</Accordion>
+
+<Accordion title="Test both themes">
+  Ensure all UI elements are visible and accessible in both dark and light themes.
+</Accordion>
+
+<Accordion title="Consistent toggle placement">
+  Place the theme toggle in the same location across all widgets (typically header, right side).
+</Accordion>
+
+## Theme variables reference
+
+Common variables used across widgets:
+
+| Variable | Purpose | Dark | Light |
+|----------|---------|------|-------|
+| `--bg-1` | Primary background | `#0a0a0a` | `#ffffff` |
+| `--bg-2` | Secondary background | `#141414` | `#f5f5f5` |
+| `--bg-3` | Tertiary background | `#1e1e1e` | `#e5e5e5` |
+| `--text-1` | Primary text | `#ffffff` | `#0a0a0a` |
+| `--text-2` | Secondary text | `#b4b4b4` | `#4a4a4a` |
+| `--text-3` | Tertiary text | `#6e6e6e` | `#8a8a8a` |
+| `--accent` | Accent color | `#00d4ff` | `#0099cc` |
+| `--border` | Border color | `#2a2a2a` | `#d4d4d4` |

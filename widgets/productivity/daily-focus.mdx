@@ -1,0 +1,190 @@
+---
+title: Daily Focus
+description: Single-goal minimalist widget to keep you focused on what matters most today
+---
+
+The Daily Focus widget embraces radical simplicity: one text input for one goal. Write your most important task for the day and keep it visible to maintain clarity and focus.
+
+## Demo
+
+<iframe src="https://stealthylabshq.github.io/iframe-edge/productivity/daily-focus/" style={{width: '100%', height: '300px', border: '1px solid var(--border-color)', borderRadius: '8px'}}></iframe>
+
+## Key Features
+
+- **Single goal focus**: One objective, maximum clarity
+- **Large input field**: Prominent display of your daily priority
+- **Auto-save**: Saves 600ms after you stop typing
+- **Save indicator**: Visual checkmark when goal is saved
+- **Minimalist design**: No distractions, just your goal
+- **Bilingual**: French/English toggle
+- **Persistent**: Goal remains until you change it
+
+## Philosophy
+
+The Daily Focus widget implements the "One Thing" philosophy:
+
+> "What's the ONE thing I can do today such that by doing it everything else would be easier or unnecessary?"
+
+By limiting you to a single goal, it forces prioritization and prevents overwhelm.
+
+## Auto-Save Implementation
+
+```javascript
+const FOCUS_KEY = "pa_dailyFocus";
+let saveTimer = null;
+const focusInput = $("focusInput");
+const saveBadge = $("saveBadge");
+
+focusInput.value = localStorage.getItem(FOCUS_KEY) || "";
+
+focusInput.addEventListener("input", () => {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    localStorage.setItem(FOCUS_KEY, focusInput.value);
+    flashSaved();
+  }, 600);
+});
+```
+
+<Info>
+The 600ms save delay is slightly longer than the Notes widget (500ms) to give you more time to think and edit your daily goal without triggering excessive saves.
+</Info>
+
+## Visual Save Feedback
+
+```javascript
+function flashSaved() {
+  saveBadge.classList.add("show");
+  clearTimeout(saveBadge._t);
+  saveBadge._t = setTimeout(
+    () => saveBadge.classList.remove("show"),
+    2200,
+  );
+}
+```
+
+The save badge appears for 2.2 seconds after each save, providing confirmation without being intrusive.
+
+## HTML Structure
+
+The widget uses a large textarea for prominence:
+
+```html
+<textarea 
+  class="focus-input" 
+  id="focusInput" 
+  placeholder="ONE GOAL TODAY" 
+  spellcheck="false"></textarea>
+```
+
+## Bilingual Support
+
+```javascript
+const i18n = {
+  fr: {
+    title: "Focus Quotidien",
+    placeholder: "UN OBJECTIF AUJOURD'HUI",
+    saved: "Sauvegardé",
+  },
+  en: {
+    title: "Daily Focus",
+    placeholder: "ONE GOAL TODAY",
+    saved: "Saved",
+  },
+};
+```
+
+## Usage
+
+<Steps>
+  <Step title="Define your goal">
+    Type your single most important goal for the day
+  </Step>
+  <Step title="Keep it visible">
+    Let the widget remain in view to maintain focus
+  </Step>
+  <Step title="Update as needed">
+    Change your goal if priorities shift
+  </Step>
+  <Step title="Celebrate completion">
+    Clear the field or mark it complete at day's end
+  </Step>
+</Steps>
+
+## Local Storage Keys
+
+| Key | Purpose | Type |
+|-----|---------|------|
+| `pa_dailyFocus` | Your daily goal text | String |
+| `pa_theme` | Theme preference | "dark" or "light" |
+| `pa_lang` | Language preference | "fr" or "en" |
+
+## Cross-Tab Sync
+
+The widget syncs theme and language across tabs:
+
+```javascript
+window.addEventListener("storage", (e) => {
+  if (e.key === THEME_KEY) {
+    currentTheme = e.newValue;
+    updateThemeUI();
+  }
+  if (e.key === LANG_KEY) {
+    currentLang = e.newValue;
+    updateLangUI();
+  }
+});
+```
+
+## Best Practices
+
+### Writing Effective Daily Goals
+
+<Note>
+**Good daily goals are:**
+- Specific and actionable
+- Achievable in one day
+- High-impact
+- Written as outcomes, not tasks
+</Note>
+
+**Examples:**
+
+✅ Good:
+- "Complete the Q1 budget presentation"
+- "Ship the user authentication feature"
+- "Write 2000 words of Chapter 3"
+
+❌ Too vague:
+- "Work on project"
+- "Be productive"
+- "Make progress"
+
+❌ Too many things:
+- "Finish presentation AND write report AND review code"
+
+## Use Cases
+
+- **Morning ritual**: Write your daily goal during morning planning
+- **Deep work anchor**: Keep your focus goal visible during work sessions
+- **Priority alignment**: Ensure your daily actions align with your goal
+- **Decision filter**: Ask "Does this help my daily goal?" before saying yes
+- **End-of-day review**: Check if you accomplished your one thing
+
+<Tip>
+Combine this widget with the Pomodoro timer: write your daily goal in Daily Focus, then use Pomodoro sessions to work on it with intense concentration.
+</Tip>
+
+## Design Intent
+
+The minimalist design is intentional:
+
+- **Large text**: Makes your goal impossible to ignore
+- **No clutter**: Nothing to distract from your priority
+- **No checkboxes**: Completion is binary - either you did it or you didn't
+- **No history**: Yesterday's goal doesn't matter; focus on today
+- **No categories**: One goal means no need for organization
+
+<Info>
+This widget pairs perfectly with the Habit Tracker for recurring daily tasks and the Pomodoro timer for execution. Use Daily Focus for your ONE strategic priority, habits for your daily maintenance tasks.
+</Info>

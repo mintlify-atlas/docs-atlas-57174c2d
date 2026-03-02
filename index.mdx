@@ -1,97 +1,98 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: Introduction
+description: Self-contained HTML/CSS/JS widgets for Corsair iCUE and Xeneon Edge displays
 ---
 
-## Setting up
+## Transform your Xenon Edge display into a productivity powerhouse
 
-Get your documentation site up and running in minutes.
+iframe-edge is a collection of beautiful, self-contained widgets designed specifically for Corsair iCUE and Xeneon Edge displays. Each widget is built with pure HTML, CSS, and vanilla JavaScript—no external dependencies, no build tools, just copy and paste.
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
+<CardGroup cols={2}>
   <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
+    title="Quick start"
+    icon="rocket"
+    href="/quickstart"
   >
-    Edit your docs locally and preview them in real time.
+    Get your first widget running in iCUE in under 2 minutes
   </Card>
   <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
+    title="Prerequisites"
+    icon="list-check"
+    href="/prerequisites"
   >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+    Hardware and software requirements to get started
   </Card>
   <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
+    title="Productivity widgets"
+    icon="gauge-high"
+    href="/widgets/productivity/hydration"
   >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
-
-## Create beautiful pages
-
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+    Hydration tracker, Pomodoro timer, budget tracker, and more
   </Card>
   <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
+    title="AI assistant"
+    icon="robot"
+    href="/widgets/ai/ai-assistant"
   >
-    Add sample code to demonstrate how to use your product.
+    Chat with Google Gemini, Anthropic Claude, or OpenAI ChatGPT
   </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+</CardGroup>
 
-## Need inspiration?
+## Key features
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+iframe-edge widgets are designed to be plug-and-play while remaining powerful and flexible:
+
+- **10+ self-contained productivity widgets** - Track hydration, manage budgets, run Pomodoro timers, take notes, and more
+- **AI assistant with 3 providers** - Choose between Google Gemini, Anthropic Claude, and OpenAI ChatGPT
+- **Spotify visualizer** - Real-time music visualization with lyrics for Spotify Premium users
+- **No external dependencies** - Pure HTML, CSS, and vanilla JavaScript bundled in single files
+- **Fully responsive** - Automatically scales to fit iCUE container sizes (M, L, XL)
+- **Dark and light mode** - Toggle theme on every widget with persistent preferences
+- **Bilingual support** - Switch between English and French on all widgets
+- **Local storage persistence** - Your settings and data stay with you
+
+## Architecture overview
+
+Each widget follows a consistent, minimal architecture:
+
+<Steps>
+  <Step title="Single-file design">
+    Every widget is contained in one HTML file that includes inline CSS and JavaScript. No bundlers, no transpilers, no package managers.
+  </Step>
+  <Step title="Vanilla JavaScript">
+    Pure JavaScript with no frameworks or libraries. The code is readable, maintainable, and easy to customize.
+  </Step>
+  <Step title="Theme system">
+    A shared `theme-loader.js` script manages dark/light mode preferences using CSS custom properties and localStorage.
+  </Step>
+  <Step title="Internationalization">
+    Built-in i18n with English and French translations, implemented as simple JavaScript objects.
+  </Step>
+</Steps>
+
+<Info>
+  All widgets use localStorage to persist user settings and data. This means your preferences, theme choices, and widget state are preserved across sessions.
+</Info>
+
+## Use cases
+
+iframe-edge widgets are perfect for:
+
+- **Streaming setups** - Display productivity tools or music visualizers on your Xeneon Edge while streaming
+- **Productivity dashboards** - Keep track of hydration, tasks, and time management without leaving your main workflow
+- **Development environments** - Quick access to notes, clipboard history, and timers while coding
+- **Content creation** - Monitor habits, focus sessions, and break reminders during long creative sessions
+- **AI-assisted workflows** - Instant access to AI chat without switching windows or contexts
+
+## What's inside
+
+The project includes:
+
+- **Productivity widgets**: Hydration tracker, budget manager, Pomodoro timer, quick notes, daily focus, habit tracker, posture reminders, quick clipboard, and timer
+- **AI & streaming**: AI assistant (Gemini/Claude/ChatGPT), Spotify visualizer with lyrics, news radar
+- **Theme support**: Dark and light modes with smooth transitions
+- **Localization**: English and French language support
+
+## Get started
+
+Ready to add widgets to your iCUE setup? Start with the [quick start guide](/quickstart) or review the [prerequisites](/prerequisites) to make sure you have everything you need.

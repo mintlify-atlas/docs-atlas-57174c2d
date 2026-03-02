@@ -1,0 +1,266 @@
+---
+title: "Widget Customization"
+description: "Customize themes, languages, and widget-specific settings with persistent localStorage"
+---
+
+## Overview
+
+All widgets support extensive customization through theme switching, language selection, and widget-specific settings. Settings persist automatically via `localStorage`, ensuring your preferences are remembered across sessions.
+
+## Theme Customization
+
+### Dark/Light Mode
+
+Widgets support theme switching with three modes:
+- **dark** (default)
+- **light**
+- **blur** (available on some widgets)
+
+### Theme Storage
+
+Themes are stored in `localStorage` under the key `pa_theme`:
+
+```javascript
+// From source/productivity/theme-loader.js:5-9
+var theme = localStorage.getItem("pa_theme") || "dark";
+if (theme !== "dark" && theme !== "light" && theme !== "blur") {
+  theme = "dark";
+}
+document.documentElement.setAttribute("data-theme", theme);
+```
+
+The theme is applied to the root element via a `data-theme` attribute before the page renders, preventing flash of unstyled content.
+
+### Toggling Theme
+
+Widgets provide a theme toggle button in the header:
+
+```javascript
+// From source/productivity/timer/app.js:459-463
+$("themeToggle").addEventListener("click", () => {
+  currentTheme = currentTheme === "dark" ? "light" : "dark";
+  localStorage.setItem("pa_theme", currentTheme);
+  updateThemeUI();
+});
+```
+
+<Tip>
+Theme changes sync across all widgets in the same browser via the `storage` event, creating a consistent experience across multiple iframes.
+</Tip>
+
+### Cross-Widget Sync
+
+Theme changes propagate to all open widgets:
+
+```javascript
+// From source/productivity/timer/app.js:478-481
+window.addEventListener("storage", (e) => {
+  if (e.key === "pa_theme") { currentTheme = e.newValue; updateThemeUI(); }
+  if (e.key === "pa_lang")  { currentLang  = e.newValue; updateLangUI(); }
+});
+```
+
+## Language Switching
+
+### Supported Languages
+
+Widgets support bilingual operation:
+- **FR** (French, default)
+- **EN** (English)
+
+### Language Storage
+
+Language preference is stored under `pa_lang`:
+
+```javascript
+// From source/productivity/timer/app.js:139-140
+let currentLang   = localStorage.getItem("pa_lang")   || "fr";
+let currentTheme  = localStorage.getItem("pa_theme")  || "dark";
+```
+
+### Toggle Implementation
+
+```javascript
+// From source/productivity/notes/app.js:74-78
+$("langToggle").addEventListener("click", () => {
+  currentLang = currentLang === "fr" ? "en" : "fr";
+  localStorage.setItem(LANG_KEY, currentLang);
+  updateLangUI();
+});
+```
+
+The language toggle updates all translatable strings in the UI immediately without requiring a page reload.
+
+## Widget-Specific Settings
+
+### Timer Widget
+
+The Timer widget persists phase configurations, display mode, and session state:
+
+```javascript
+// From source/productivity/timer/app.js:148-155
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    phases:          st.phases,
+    currentPhaseIdx: st.currentPhaseIdx,
+    displayMode:     st.displayMode,
+    nextId:          st.nextId,
+  }));
+}
+```
+
+**Stored data:**
+- Phase definitions (name, duration, color)
+- Current active phase
+- Display mode (ring vs. digital)
+- Auto-incrementing phase ID counter
+
+<Note>
+The timer does NOT persist the running state or time remaining - each session starts fresh. This prevents stale timers from running indefinitely.
+</Note>
+
+### AI Assistant Widget
+
+Stores conversations, API keys, and model preferences:
+
+```javascript
+// From source/ai-assistant/app.js:7-20
+const LS = {
+  THEME: "pa_theme",
+  LANG: "pa_lang",
+  PROVIDER: "pa_ai_provider",
+  KEY_GEMINI: "pa_ai_key_gemini",
+  KEY_CLAUDE: "pa_ai_key_claude",
+  KEY_OPENAI: "pa_ai_key_openai",
+  MODEL_GEMINI: "pa_ai_model_gemini",
+  MODEL_CLAUDE: "pa_ai_model_claude",
+  MODEL_OPENAI: "pa_ai_model_openai",
+  PROXY: "pa_ai_proxy_url",
+  SYSTEM: "pa_ai_system_prompt",
+  CONVS: "pa_ai_conversations",
+};
+```
+
+<Warning>
+API keys are migrated from `localStorage` to `sessionStorage` for security. Keys are never persisted permanently.
+</Warning>
+
+### Notes Widget
+
+Auto-saves note content with debounced persistence:
+
+```javascript
+// From source/productivity/notes/app.js:108-115
+notesArea.addEventListener("input", () => {
+  updateCharCount();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    localStorage.setItem(NOTES_KEY, notesArea.value);
+    flashSaved();
+  }, 500);
+});
+```
+
+Changes are saved 500ms after typing stops, providing a smooth experience without excessive writes.
+
+## CSS Custom Properties
+
+Widgets use CSS variables for dynamic theming. The Timer widget applies phase colors:
+
+```javascript
+// From source/productivity/timer/app.js:175-180
+function applyPhaseColor(phase) {
+  const c = phaseColor(phase);
+  const root = document.documentElement;
+  root.style.setProperty("--pc",     c.hex);
+  root.style.setProperty("--pc-rgb", c.rgb);
+}
+```
+
+**Common CSS variables:**
+- `--pc` - Primary color (hex format)
+- `--pc-rgb` - Primary color (RGB values for alpha blending)
+
+These variables cascade through the widget's styles, allowing dynamic color schemes without rebuilding CSS.
+
+## Customization Patterns
+
+### Reading Settings
+
+```javascript
+const theme = localStorage.getItem("pa_theme") || "dark";
+const lang = localStorage.getItem("pa_lang") || "fr";
+```
+
+### Writing Settings
+
+```javascript
+localStorage.setItem("pa_theme", "light");
+localStorage.setItem("pa_lang", "en");
+```
+
+### Validation
+
+Always validate retrieved values:
+
+```javascript
+var theme = localStorage.getItem("pa_theme") || "dark";
+if (theme !== "dark" && theme !== "light" && theme !== "blur") {
+  theme = "dark";
+}
+```
+
+<Accordion title="Why validate localStorage values?">
+Values in `localStorage` can be modified by:
+- Browser extensions
+- User tampering via DevTools
+- Corrupted data from interrupted writes
+- Migration from older widget versions
+
+Always validate and provide fallback defaults to prevent rendering issues.
+</Accordion>
+
+## Best Practices
+
+<Tip>
+**Pre-render theme loading**: The `theme-loader.js` script executes in `<head>` before page content, preventing theme flash.
+</Tip>
+
+1. **Default values**: Always provide sensible defaults when reading from localStorage
+2. **Debounce writes**: For frequently changing data (like notes), debounce writes to avoid performance issues
+3. **Structured data**: Use `JSON.stringify()` for complex objects, with try-catch for parsing
+4. **Security**: Never store sensitive data (passwords, tokens) in localStorage - use sessionStorage or secure cookies
+5. **Cross-tab sync**: Listen to `storage` events to sync settings across widgets
+
+## Example: Custom Widget Settings
+
+Here's a complete example of implementing persistent settings:
+
+```javascript
+const SETTINGS_KEY = "my_widget_settings";
+
+function loadSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+    return saved || getDefaultSettings();
+  } catch (e) {
+    return getDefaultSettings();
+  }
+}
+
+function saveSettings(settings) {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch (e) {
+    console.error("Failed to save settings:", e);
+  }
+}
+
+function getDefaultSettings() {
+  return {
+    theme: localStorage.getItem("pa_theme") || "dark",
+    lang: localStorage.getItem("pa_lang") || "fr",
+    customOption: true
+  };
+}
+```

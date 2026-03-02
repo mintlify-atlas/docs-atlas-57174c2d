@@ -1,0 +1,199 @@
+---
+title: Prerequisites
+description: Hardware and software requirements for iframe-edge widgets
+---
+
+## Hardware requirements
+
+To use iframe-edge widgets, you need:
+
+### Corsair Xeneon Edge display
+
+All widgets are designed and optimized for the **Corsair Xeneon Edge** edge display. The widgets automatically adapt to the available container sizes (M, L, XL) that iCUE provides.
+
+<Info>
+  While the widgets are HTML/CSS/JavaScript and could technically run in any browser, they are specifically designed for the Xeneon Edge display's dimensions and iCUE integration.
+</Info>
+
+## Software requirements
+
+### Corsair iCUE
+
+You must have the **[Corsair iCUE](https://www.corsair.com/icue)** software installed and up to date.
+
+<Steps>
+  <Step title="Download iCUE">
+    Visit [corsair.com/icue](https://www.corsair.com/icue) to download the latest version for your operating system.
+  </Step>
+  <Step title="Install and launch">
+    Run the installer and follow the on-screen instructions. Launch iCUE after installation.
+  </Step>
+  <Step title="Connect your Xeneon Edge">
+    Make sure your Xeneon Edge display is connected and recognized by iCUE.
+  </Step>
+  <Step title="Verify iframe widget availability">
+    Navigate to your display configuration and confirm you can see the **`</> iFrame`** widget option in the left sidebar.
+  </Step>
+</Steps>
+
+<Note>
+  iCUE must be running for the widgets to display on your Xeneon Edge. The widgets load from GitHub Pages, so an internet connection is required for initial loading.
+</Note>
+
+## Widget-specific requirements
+
+Some widgets require additional setup or accounts:
+
+### AI assistant widget
+
+The AI assistant requires an API key from one of these providers:
+
+<CardGroup cols={3}>
+  <Card title="Google Gemini" icon="google">
+    **Free tier available**
+    
+    Pay-as-you-go pricing recommended
+    
+    [Get API key →](https://aistudio.google.com/app/apikey)
+  </Card>
+  <Card title="Anthropic Claude" icon="a">
+    **Pay-as-you-go**
+    
+    Credit card required
+    
+    [Get API key →](https://console.anthropic.com/settings/keys)
+  </Card>
+  <Card title="OpenAI ChatGPT" icon="openai">
+    **Pay-as-you-go**
+    
+    Credit card required
+    
+    [Get API key →](https://platform.openai.com/api-keys)
+  </Card>
+</CardGroup>
+
+#### How to get an API key
+
+<Tabs>
+  <Tab title="Google Gemini">
+    1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
+    2. Sign in with your Google account
+    3. Click **Create API Key**
+    4. Copy the key (it starts with `AIza`)
+    5. Paste it into the AI assistant widget settings
+
+    <Tip>
+      Google Gemini offers a generous free tier, making it the most cost-effective option for getting started.
+    </Tip>
+  </Tab>
+  <Tab title="Anthropic Claude">
+    1. Go to the [Anthropic Console](https://console.anthropic.com/settings/keys)
+    2. Sign in or create an account
+    3. Add billing information
+    4. Navigate to **API Keys**
+    5. Click **Create Key**
+    6. Copy the key (it starts with `sk-ant-`)
+    7. Paste it into the AI assistant widget settings
+  </Tab>
+  <Tab title="OpenAI">
+    1. Go to the [OpenAI Platform](https://platform.openai.com/api-keys)
+    2. Sign in or create an account
+    3. Add billing information
+    4. Click **Create new secret key**
+    5. Copy the key (it starts with `sk-`)
+    6. Paste it into the AI assistant widget settings
+
+    <Warning>
+      Never share your API key. It's stored locally in iCUE and never transmitted except to the AI provider's servers.
+    </Warning>
+  </Tab>
+</Tabs>
+
+#### Configuring the AI assistant
+
+Once you have an API key:
+
+1. Add the AI assistant widget to iCUE
+2. Click the **Settings** ⚙️ icon in the top right corner
+3. Select your preferred provider (Google, Anthropic, or OpenAI)
+4. Paste your API key
+5. Click **Save**
+
+<Info>
+  Your API key is securely stored locally in your iCUE session using localStorage. It never leaves your machine except when making API calls to your chosen AI provider.
+</Info>
+
+### Spotify visualizer widget
+
+The Spotify visualizer requires:
+
+- A **Spotify Premium** account
+- A Spotify Developer app (free to create)
+
+<Steps>
+  <Step title="Create a Spotify Developer app">
+    1. Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+    2. Log in with your Spotify account
+    3. Click **Create app**
+    4. Fill in the app name and description (can be anything)
+  </Step>
+  
+  <Step title="Configure the redirect URL">
+    In your app settings, add this exact redirect URL:
+    
+    ```
+    https://stealthylabshq.github.io/iframe-edge/spotify-visualizer/auth/callback.html
+    ```
+    
+    <Warning>
+      The redirect URL must match exactly, including the `https://` prefix and `/auth/callback.html` path.
+    </Warning>
+  </Step>
+  
+  <Step title="Enable Web API">
+    Make sure to check the **Web API** box in your app settings.
+  </Step>
+  
+  <Step title="Get your Client ID">
+    Copy your **Client ID** from the app settings page. You'll need this to connect the widget.
+  </Step>
+  
+  <Step title="Connect the widget">
+    1. Add the Spotify visualizer widget to iCUE
+    2. Enter your **Client ID** when prompted
+    3. You'll be redirected to log in and grant permissions
+    4. After authorization, the widget will display your currently playing track
+  </Step>
+</Steps>
+
+<Note>
+  The Spotify visualizer widget uses the Spotify Web API to fetch currently playing track information, album art, and lyrics. It requires an active Spotify Premium subscription to access playback data.
+</Note>
+
+## Browser compatibility
+
+All widgets are tested and optimized for the browser engine used by iCUE's iframe widget. They use:
+
+- Modern JavaScript (ES6+)
+- CSS Grid and Flexbox layouts
+- CSS custom properties for theming
+- localStorage for persistence
+- SVG for icons and graphics
+
+<Info>
+  The widgets follow web standards and should work in any modern browser, but they're specifically optimized for the iCUE environment.
+</Info>
+
+## Network requirements
+
+- **Internet connection** - Required to load widgets from GitHub Pages
+- **API access** - AI assistant and Spotify visualizer need outbound HTTPS access to their respective APIs
+- **No VPN restrictions** - Some corporate VPNs may block GitHub Pages or AI provider APIs
+
+<Tip>
+  All widgets are served over HTTPS from GitHub Pages. If you experience loading issues, check your firewall settings to ensure `stealthylabshq.github.io` is accessible.
+</Tip>
+
+## Ready to start
+
+Once you have the required hardware and software, head over to the [quick start guide](/quickstart) to add your first widget.

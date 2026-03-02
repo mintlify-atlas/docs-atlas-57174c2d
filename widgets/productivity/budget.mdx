@@ -1,0 +1,180 @@
+---
+title: Budget Tracker
+description: Track income and expenses with categories, monthly subscriptions, and visual summaries
+---
+
+The Budget widget is a comprehensive personal finance tracker that helps you manage transactions, recurring subscriptions, and monthly budgets with a clean, category-based interface.
+
+## Demo
+
+<iframe src="https://stealthylabshq.github.io/iframe-edge/productivity/budget/" style={{width: '100%', height: '600px', border: '1px solid var(--border-color)', borderRadius: '8px'}}></iframe>
+
+## Key Features
+
+- **Dual transaction types**: Track both income and expenses
+- **Category system**: 10 categorized types with emoji icons
+- **Monthly subscriptions**: Track recurring expenses with automatic debit date calculation
+- **Summary cards**: Real-time balance, income, and expense totals
+- **Month navigation**: Browse historical transactions by month
+- **Upcoming debits**: Visual chips showing next subscription charges
+- **Bilingual**: French/English support
+- **Auto-save**: All data persists to localStorage
+
+## Transaction Categories
+
+### Expense Categories
+
+- 🍔 **Food** (Alimentation)
+- 🚗 **Transport**
+- 🏠 **Housing** (Logement)
+- 🎬 **Entertainment** (Loisirs)
+- 💊 **Health** (Santé)
+- 🛍️ **Shopping**
+- 📦 **Other** (Autre)
+
+### Income Categories
+
+- 💼 **Salary** (Salaire)
+- 💻 **Freelance**
+- 💰 **Other Income** (Autre revenu)
+
+## Usage
+
+<Steps>
+  <Step title="Select transaction type">
+    Toggle between "Expense" and "Income" buttons
+  </Step>
+  <Step title="Enter details">
+    Fill in amount, description, and select a category
+  </Step>
+  <Step title="Mark as recurring (optional)">
+    For expenses, check "🔄 Monthly subscription" and enter debit day (1-31)
+  </Step>
+  <Step title="Add transaction">
+    Click the "+" button to save the transaction
+  </Step>
+</Steps>
+
+## Recurring Subscriptions
+
+The widget features a powerful subscription tracking system:
+
+### Debit Date Calculation
+
+```javascript
+function nextDebitDate(day) {
+  const now = new Date();
+  const todayNum = now.getDate();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+
+  function clampDay(yr, mo, d) {
+    return Math.min(d, new Date(yr, mo + 1, 0).getDate());
+  }
+
+  let date;
+  const clampedThis = clampDay(y, m, day);
+  if (clampedThis >= todayNum) {
+    date = new Date(y, m, clampedThis);
+  } else {
+    const nm = (m + 1) % 12;
+    const ny = m === 11 ? y + 1 : y;
+    date = new Date(ny, nm, clampDay(ny, nm, day));
+  }
+  // ...
+}
+```
+
+<Info>
+The subscription tracker intelligently handles months with different numbers of days. If you set a debit day of 31, it will use the last day of months with fewer days.
+</Info>
+
+### Subscription Display
+
+When you have active subscriptions, the widget shows:
+
+- **Upcoming debit chips**: Sorted by next charge date
+- **Total monthly cost**: Sum of all subscription amounts
+- **Quick delete**: Remove subscriptions with the × button
+
+## Summary Calculations
+
+The widget calculates monthly summaries in real-time:
+
+```javascript
+function renderSummary() {
+  const monthTxns = txns.filter(tx => tx.month === viewMonth);
+  const totalIncome = monthTxns
+    .filter(tx => tx.type === "income")
+    .reduce((s, tx) => s + tx.amount, 0);
+  const totalExpense = monthTxns
+    .filter(tx => tx.type === "expense")
+    .reduce((s, tx) => s + tx.amount, 0);
+  const balance = totalIncome - totalExpense;
+  
+  balEl.style.color = balance >= 0 ? "#00b894" : "#d63031";
+}
+```
+
+## Month Navigation
+
+Browse your financial history:
+
+- **Previous month**: Click ← to go back (disabled if no older transactions)
+- **Next month**: Click → to advance (disabled if at current month)
+- **Month label**: Shows current viewing month and year
+
+```javascript
+function getPrevMonth(ym) {
+  const [y, m] = ym.split("-").map(Number);
+  return m === 1
+    ? (y - 1) + "-12"
+    : y + "-" + String(m - 1).padStart(2, "0");
+}
+```
+
+## Local Storage Keys
+
+| Key | Purpose | Type |
+|-----|---------|------|
+| `pa_budgetTxns` | All transactions | JSON array |
+| `pa_budgetSubs` | Recurring subscriptions | JSON array |
+| `pa_theme` | Theme preference | "dark" or "light" |
+| `pa_lang` | Language preference | "fr" or "en" |
+
+## Transaction Structure
+
+Each transaction is stored with:
+
+```javascript
+{
+  id: "unique_id",
+  type: "expense" | "income",
+  amount: 42.50,
+  description: "Grocery shopping",
+  category: "food",
+  date: "2026-03-02",
+  month: "2026-03",
+  recurring: true // optional
+}
+```
+
+## Subscription Structure
+
+```javascript
+{
+  id: "unique_id",
+  description: "Netflix",
+  category: "entertainment",
+  amount: 15.99,
+  debitDay: 15 // day of month (1-31)
+}
+```
+
+<Note>
+Subscriptions are separate from transactions. When you mark a transaction as recurring, it saves both the transaction AND a subscription template for future reference.
+</Note>
+
+<Tip>
+Use the recurring subscription feature to get a complete picture of your monthly obligations. The widget will show you upcoming charges and total monthly subscription costs.
+</Tip>

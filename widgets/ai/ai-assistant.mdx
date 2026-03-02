@@ -1,0 +1,434 @@
+---
+title: AI Assistant
+description: Multi-provider AI chat widget with support for Google Gemini, Anthropic Claude, and OpenAI ChatGPT
+icon: robot
+---
+
+<Frame>
+  <img src="https://github.com/user-attachments/assets/3d705bdb-ce5a-4ed7-8589-008153144234" alt="AI Assistant Widget" />
+</Frame>
+
+## Overview
+
+The AI Assistant widget provides a full-featured chat interface with support for three major AI providers:
+
+- **Google Gemini** (Free tier available / Pay-as-you-go)
+- **Anthropic Claude** (Pay-as-you-go)
+- **OpenAI ChatGPT** (Pay-as-you-go)
+
+Features conversation history, system prompts, model selection, streaming responses, and markdown rendering.
+
+## iframe Code
+
+```html
+<iframe src="https://stealthylabshq.github.io/iframe-edge/ai-assistant/"></iframe>
+```
+
+<Note>
+This widget requires an API key from one of the supported providers. API keys are stored securely in your browser's session storage (not persistent).
+</Note>
+
+## Setup
+
+<Steps>
+  <Step title="Get an API Key">
+    Choose one of the following providers and obtain an API key:
+
+    <Tabs>
+      <Tab title="Google Gemini">
+        **Recommended for beginners** (free tier available)
+
+        1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
+        2. Sign in with your Google account
+        3. Click **"Get API key"** or **"Create API key"**
+        4. Copy the key (starts with `AIza...`)
+
+        <Note>
+        The free tier includes generous quotas for testing. Pay-as-you-go pricing is very affordable for personal use.
+        </Note>
+      </Tab>
+
+      <Tab title="Anthropic Claude">
+        **Best for advanced reasoning**
+
+        1. Go to [Anthropic Console](https://console.anthropic.com/settings/keys)
+        2. Sign in or create an account
+        3. Navigate to **API Keys** settings
+        4. Click **"Create Key"**
+        5. Copy the key (starts with `sk-ant-...`)
+
+        <Warning>
+        Anthropic requires adding credits to your account before you can use the API.
+        </Warning>
+      </Tab>
+
+      <Tab title="OpenAI ChatGPT">
+        **Industry standard models**
+
+        1. Go to [OpenAI Platform](https://platform.openai.com/api-keys)
+        2. Sign in with your OpenAI account
+        3. Click **"Create new secret key"**
+        4. Give it a name and copy the key (starts with `sk-...`)
+
+        <Warning>
+        Keep your API key secure. Never share it or commit it to version control.
+        </Warning>
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Add the Widget to iCUE">
+    1. Open **iCUE** and navigate to your Xeneon Edge dashboard
+    2. Add an **iFrame widget** (size M, L, or XL)
+    3. Paste the iframe code from above
+    4. The widget will load with a setup prompt
+  </Step>
+
+  <Step title="Configure API Key">
+    1. Click the **Settings** icon (⚙️) in the top-right corner
+    2. Select your AI provider tab (Google, Anthropic, or OpenAI)
+    3. Paste your API key in the appropriate field
+    4. (Optional) Select a model from the dropdown
+    5. Click **Save**
+  </Step>
+
+  <Step title="Start Chatting">
+    Once configured, the welcome screen will appear with conversation starters. Type your message and press Enter to begin!
+  </Step>
+</Steps>
+
+## Configuration
+
+### Provider Settings
+
+The settings panel allows you to configure each provider independently:
+
+<Accordion title="Google Gemini Models">
+  Available models (as extracted from source code):
+
+  **Gemini 3.x (Latest Generation)**
+  - `gemini-3.1-pro-preview`
+  - `gemini-3-pro-preview`
+  - `gemini-3-flash-preview`
+
+  **Gemini 2.5**
+  - `gemini-2.5-pro`
+  - `gemini-2.5-pro-preview-05-06`
+  - `gemini-2.5-flash`
+  - `gemini-2.5-flash-preview-04-17`
+  - `gemini-2.5-flash-lite`
+
+  **Gemini 2.0**
+  - `gemini-2.0-flash` (default)
+  - `gemini-2.0-flash-lite`
+
+  **Aliases**
+  - `gemini-flash-latest`
+  - `gemini-flash-lite-latest`
+
+  You can also select **Custom** to enter a model name manually.
+</Accordion>
+
+<Accordion title="Anthropic Claude Models">
+  Available models:
+
+  - `claude-sonnet-4-6` (default, balanced performance)
+  - `claude-opus-4-6` (most capable, slower)
+  - `claude-haiku-4-5-20251001` (fastest, most affordable)
+  - **Custom** option for entering model IDs manually
+
+  <Note>
+  Claude requires a **Proxy URL** for direct browser requests OR uses the `anthropic-dangerous-direct-browser-access` header. The widget handles this automatically.
+  </Note>
+</Accordion>
+
+<Accordion title="OpenAI Models">
+  Available models:
+
+  **GPT-5 Series**
+  - `gpt-5.1`
+  - `gpt-5-mini`
+  - `gpt-5-nano`
+
+  **GPT-4.1 Series**
+  - `gpt-4.1`
+  - `gpt-4.1-mini`
+  - `gpt-4.1-nano`
+
+  **GPT-4o Series** (default)
+  - `gpt-4o`
+  - `gpt-4o-mini`
+
+  **Reasoning Models**
+  - `o3`
+  - `o4-mini`
+
+  Custom model names are also supported.
+</Accordion>
+
+### System Prompt (Optional)
+
+Customize the AI's behavior with a system prompt:
+
+```text
+You are a helpful and concise assistant specialized in programming.
+Provide code examples when relevant.
+```
+
+The system prompt is sent with every conversation and affects the AI's responses.
+
+### Proxy URL (Claude Only)
+
+If you're using Claude and encounter CORS issues, you can specify a proxy URL:
+
+```text
+https://my-proxy.example.com
+```
+
+<Warning>
+Proxy URL must be HTTPS only, with no authentication, query parameters, or hash fragments.
+</Warning>
+
+## Features
+
+### Conversation History
+
+The widget automatically saves up to **20 conversations** in local storage:
+
+- View past conversations in the sidebar (toggle with ☰ icon)
+- Each conversation shows the first message as the title
+- Click any conversation to resume it
+- Delete conversations individually with the × button
+
+### API Key Storage
+
+```javascript ai-assistant/app.js
+// API keys are stored in sessionStorage for security
+function setApiKey(provider, value) {
+    const trimmed = (value || "").trim();
+    const sessionKey = sessionKeyForProvider(provider);
+    const legacyKey = legacyKeyForProvider(provider);
+    if (trimmed) safeSet(sessionStorage, sessionKey, trimmed);
+    else safeRemove(sessionStorage, sessionKey);
+    // Ensure no persistent copy remains.
+    safeRemove(localStorage, legacyKey);
+}
+```
+
+API keys are stored in **sessionStorage** (cleared when browser closes) rather than localStorage for enhanced security. The widget automatically migrates old persistent keys to session storage on first load.
+
+### Streaming Responses
+
+All three providers use Server-Sent Events (SSE) for real-time streaming:
+
+```javascript ai-assistant/app.js
+async function streamGemini(contents, systemPrompt, model, key, signal, onChunk) {
+    const safeModel = encodeURIComponent(model);
+    const url = `${GEMINI_BASE}/${safeModel}:streamGenerateContent?alt=sse`;
+    const body = {
+        contents,
+        generationConfig: { maxOutputTokens: 8192, temperature: 0.7 },
+    };
+    if (systemPrompt) {
+        body.systemInstruction = { parts: [{ text: systemPrompt }] };
+    }
+
+    const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": key,
+        },
+        body: JSON.stringify(body),
+        signal,
+        referrerPolicy: "no-referrer",
+    });
+    // ... SSE parsing logic
+}
+```
+
+### Markdown Rendering
+
+AI responses are rendered with full markdown support:
+
+- **Code blocks** with syntax highlighting
+- **Inline code** formatting
+- **Bold**, *italic*, and ***bold+italic***
+- Headings (H2-H4)
+- Bullet and numbered lists
+- Horizontal rules
+
+```javascript ai-assistant/app.js
+function parseMarkdown(text) {
+    // Escape HTML to prevent XSS
+    let s = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+    // Fenced code blocks
+    s = s.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) =>
+        `<pre><code${lang ? ` data-lang="${lang}"` : ""}>${code.trimEnd()}</code></pre>`
+    );
+
+    // Inline code, bold, italic, etc.
+    // ...
+}
+```
+
+## API Integration Details
+
+### Google Gemini API
+
+**Endpoint:**  
+`https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?alt=sse`
+
+**Authentication:**  
+API key via `x-goog-api-key` header
+
+**Request Format:**
+```json
+{
+  "contents": [
+    { "role": "user", "parts": [{ "text": "Hello" }] },
+    { "role": "model", "parts": [{ "text": "Hi there!" }] }
+  ],
+  "systemInstruction": {
+    "parts": [{ "text": "You are a helpful assistant" }]
+  },
+  "generationConfig": {
+    "maxOutputTokens": 8192,
+    "temperature": 0.7
+  }
+}
+```
+
+### Anthropic Claude API
+
+**Endpoint:**  
+`https://api.anthropic.com/v1/messages`
+
+**Authentication:**  
+API key via `x-api-key` header
+
+**Special Header:**
+```javascript
+headers: {
+    "anthropic-dangerous-direct-browser-access": "true"
+}
+```
+
+This header allows direct browser calls without CORS issues.
+
+**Request Format:**
+```json
+{
+  "model": "claude-sonnet-4-6",
+  "max_tokens": 8192,
+  "messages": [
+    { "role": "user", "content": "Hello" },
+    { "role": "assistant", "content": "Hi there!" }
+  ],
+  "system": "You are a helpful assistant",
+  "stream": true
+}
+```
+
+### OpenAI API
+
+**Endpoint:**  
+`https://api.openai.com/v1/chat/completions`
+
+**Authentication:**  
+Bearer token via `Authorization` header
+
+**Request Format:**
+```json
+{
+  "model": "gpt-4o",
+  "messages": [
+    { "role": "system", "content": "You are a helpful assistant" },
+    { "role": "user", "content": "Hello" },
+    { "role": "assistant", "content": "Hi there!" }
+  ],
+  "stream": true,
+  "max_completion_tokens": 8192
+}
+```
+
+## Localization
+
+The widget supports French and English:
+
+- Click the **FR/EN** button to toggle language
+- All UI text, placeholders, and error messages are translated
+- Language preference is saved in localStorage (`pa_lang`)
+
+## Keyboard Shortcuts
+
+- **Enter** — Send message
+- **Shift + Enter** — New line in message
+- **Click Stop icon** — Abort streaming response
+
+## Security Notes
+
+<Warning>
+**API Key Security**
+
+- Keys are stored in **sessionStorage** (cleared when browser closes)
+- Never shared with third parties
+- Sent only to the respective AI provider's API
+- CSP policy blocks unauthorized connections
+
+Do not share your API keys or commit them to public repositories.
+</Warning>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Error — check your API key">
+    **Cause:** Invalid API key or network error
+
+    **Solution:**
+    1. Verify your API key is correct (check for extra spaces)
+    2. Ensure you have credits/quota remaining with your provider
+    3. Check your internet connection
+  </Accordion>
+
+  <Accordion title="Claude: Invalid proxy URL">
+    **Cause:** Proxy URL doesn't meet HTTPS requirements
+
+    **Solution:**
+    - Use HTTPS URLs only
+    - Remove any authentication credentials from URL
+    - Remove query parameters and hash fragments
+    - Or leave proxy URL empty to use direct browser access
+  </Accordion>
+
+  <Accordion title="Conversation history disappeared">
+    **Cause:** localStorage was cleared or you hit the 20 conversation limit
+
+    **Solution:**
+    Conversations are automatically limited to the 20 most recent. Older ones are removed to save space. This is expected behavior.
+  </Accordion>
+
+  <Accordion title="Streaming stopped mid-response">
+    **Cause:** You clicked the stop button, or network connection was interrupted
+
+    **Solution:**
+    This is normal if you stopped generation. Otherwise, check your network connection and retry.
+  </Accordion>
+</AccordionGroup>
+
+## Source Code Reference
+
+- **HTML:** `/ai-assistant/index.html` (319 lines)
+- **JavaScript:** `/ai-assistant/app.js` (1,200+ lines)
+- **CSS:** `/ai-assistant/css/widget.css`
+
+Key implementation details:
+
+- **localStorage keys:** `pa_ai_provider`, `pa_ai_model_gemini`, `pa_ai_model_claude`, `pa_ai_model_openai`, `pa_ai_system_prompt`, `pa_ai_conversations`
+- **sessionStorage keys:** `pa_ai_key_gemini_session`, `pa_ai_key_claude_session`, `pa_ai_key_openai_session`
+- **Max conversations:** 20 (app.js:31)
+- **Default models:** `gemini-2.0-flash`, `gpt-4o`, `claude-sonnet-4-6`

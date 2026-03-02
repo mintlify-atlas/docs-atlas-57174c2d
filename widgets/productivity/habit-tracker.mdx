@@ -1,0 +1,267 @@
+---
+title: Habit Tracker
+description: Track up to 4 daily habits with automatic midnight reset and completion status
+---
+
+The Habit Tracker widget helps you build consistency by tracking up to 4 daily habits. Each habit can be checked off when complete, and the widget automatically resets at midnight.
+
+## Demo
+
+<iframe src="https://stealthylabshq.github.io/iframe-edge/productivity/habit-tracker/" style={{width: '100%', height: '400px', border: '1px solid var(--border-color)', borderRadius: '8px'}}></iframe>
+
+## Key Features
+
+- **4 habit slots**: Track exactly 4 daily habits
+- **Editable habits**: Click to edit habit names inline
+- **Check/uncheck**: Toggle completion status with visual feedback
+- **Auto-reset**: Resets all habits at midnight
+- **Completion celebration**: Toast message when all habits are done
+- **Bilingual**: French/English with localized placeholders
+- **Auto-save**: All changes persist immediately
+- **Visual states**: Clear styling for checked vs unchecked
+
+## Habit Structure
+
+Each habit is stored as an object:
+
+```javascript
+{ 
+  text: "Read 10 pages", 
+  done: false 
+}
+```
+
+The widget always maintains exactly 4 habits:
+
+```javascript
+habits = JSON.parse(localStorage.getItem(HABITS_KEY)) || [
+  { text: "", done: false },
+  { text: "", done: false },
+  { text: "", done: false },
+  { text: "", done: false },
+];
+```
+
+## Daily Reset Logic
+
+```javascript
+const HABITS_DATE_KEY = "pa_habitsDate";
+
+function loadHabits() {
+  // ... load habits from storage ...
+  
+  const savedDate = localStorage.getItem(HABITS_DATE_KEY);
+  if (savedDate && savedDate !== today()) {
+    habits.forEach((h) => (h.done = false));
+    localStorage.setItem(HABITS_DATE_KEY, today());
+    saveHabits();
+    showToast(t("toastReset"));
+  } else if (!savedDate) {
+    localStorage.setItem(HABITS_DATE_KEY, today());
+  }
+}
+```
+
+Every 60 seconds, the widget checks for day changes:
+
+```javascript
+setInterval(() => {
+  const saved = localStorage.getItem(HABITS_DATE_KEY);
+  if (saved && saved !== today()) {
+    loadHabits();
+    renderHabits();
+  }
+}, 60_000);
+```
+
+## Completion Detection
+
+When you check off a habit, the widget checks if all filled habits are complete:
+
+```javascript
+btn.addEventListener("click", () => {
+  habits[i].done = !habits[i].done;
+  saveHabits();
+  renderHabits();
+
+  if (habits[i].done) {
+    const allDone = habits
+      .filter((h) => h.text.trim().length > 0)
+      .every((h) => h.done);
+    const hasText = habits.some((h) => h.text.trim().length > 0);
+    if (allDone && hasText) {
+      showToast(t("toastAllDone"));
+    }
+  }
+});
+```
+
+<Info>
+The widget only celebrates when ALL non-empty habits are complete. Empty habit slots are ignored in the completion check.
+</Info>
+
+## Rendering Habits
+
+```javascript
+function renderHabits() {
+  const list = $("habitList");
+  list.replaceChildren();
+  const placeholders = t("placeholders");
+
+  habits.forEach((h, i) => {
+    const item = document.createElement("div");
+    item.className = "habit-item" + (h.done ? " checked" : "");
+
+    const btn = document.createElement("div");
+    btn.className = "h-checkbox";
+    btn.textContent = "✓";
+
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = "h-input";
+    inp.value = h.text;
+    inp.placeholder = placeholders[i] || "";
+
+    inp.addEventListener("input", (e) => {
+      habits[i].text = e.target.value;
+      saveHabits();
+    });
+
+    item.appendChild(btn);
+    item.appendChild(inp);
+    list.appendChild(item);
+  });
+}
+```
+
+## Bilingual Placeholders
+
+```javascript
+const i18n = {
+  fr: {
+    placeholders: [
+      "Ex: Lire 10 pages...",
+      "Ex: Sport 30mn...",
+      "Ex: Méditation...",
+      "Ex: Vitamines...",
+    ],
+    toastReset: "🌅 Nouveau jour ! Habitudes réinitialisées.",
+    toastAllDone: "🎉 Toutes les habitudes sont complétées !",
+  },
+  en: {
+    placeholders: [
+      "e.g., Read 10 pages...",
+      "e.g., Workout 30m...",
+      "e.g., Meditate...",
+      "e.g., Take vitamins...",
+    ],
+    toastReset: "🌅 New day! Habits reset.",
+    toastAllDone: "🎉 All habits complete!",
+  },
+};
+```
+
+## Usage
+
+<Steps>
+  <Step title="Define your habits">
+    Click in each text field to write your 4 daily habits
+  </Step>
+  <Step title="Check off completed habits">
+    Click the checkbox when you complete a habit
+  </Step>
+  <Step title="Watch for completion">
+    Get a celebration toast when all habits are done
+  </Step>
+  <Step title="Reset at midnight">
+    Habits automatically uncheck at midnight each day
+  </Step>
+</Steps>
+
+## Local Storage Keys
+
+| Key | Purpose | Type |
+|-----|---------|------|
+| `pa_habitsData` | Array of habit objects | JSON array |
+| `pa_habitsDate` | Date of last habit check | ISO date (YYYY-MM-DD) |
+| `pa_theme` | Theme preference | "dark" or "light" |
+| `pa_lang` | Language preference | "fr" or "en" |
+
+## Visual States
+
+The widget provides clear visual feedback:
+
+- **Unchecked**: Gray checkbox outline, normal text color
+- **Checked**: Green checkbox with ✓, different text styling
+- **Empty**: Placeholder text visible, no completion tracking
+- **Focused**: Input border highlight when typing
+
+## Best Practices
+
+<Note>
+**Choose habits that are:**
+- Daily (not weekly or monthly)
+- Binary (done or not done)
+- Small and achievable
+- Important to your goals
+</Note>
+
+### Good Habit Examples
+
+✅ **Health:**
+- "Drink 8 glasses of water"
+- "Exercise 30 minutes"
+- "Take vitamins"
+- "Meditate 10 minutes"
+
+✅ **Learning:**
+- "Read 10 pages"
+- "Practice Spanish 15 minutes"
+- "Write 500 words"
+- "Code for 1 hour"
+
+✅ **Wellness:**
+- "Journal 5 minutes"
+- "No phone after 9pm"
+- "Gratitude list (3 items)"
+- "Stretch before bed"
+
+### Habits to Avoid
+
+❌ **Too vague:**
+- "Be healthy"
+- "Work on project"
+
+❌ **Too complex:**
+- "Complete entire workout program"
+- "Read entire book"
+
+❌ **Not daily:**
+- "Weekly review" (use calendar instead)
+- "Monthly report" (wrong frequency)
+
+## Why Only 4 Habits?
+
+The 4-habit limit is intentional:
+
+- **Prevents overwhelm**: Too many habits leads to failure
+- **Forces prioritization**: Choose what really matters
+- **Increases success**: Higher completion rate with fewer habits
+- **Visual clarity**: All habits visible without scrolling
+- **Research-backed**: Most people can't sustain more than 4 daily habits
+
+<Tip>
+Start with just 2-3 habits for the first month. Add more only when existing habits feel automatic. Building habits takes 21-66 days on average.
+</Tip>
+
+## Habit Stacking
+
+Link new habits to existing ones:
+
+- "After my morning coffee, I will meditate 10 minutes"
+- "After I brush my teeth, I will do 10 pushups"
+- "After lunch, I will walk for 15 minutes"
+
+<Info>
+The Habit Tracker pairs well with Daily Focus: use Daily Focus for your ONE strategic goal, and Habit Tracker for your daily maintenance routines.
+</Info>

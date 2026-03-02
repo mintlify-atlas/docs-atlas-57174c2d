@@ -1,0 +1,264 @@
+---
+title: Architecture
+description: Understanding the single-file architecture pattern used in iframe-edge widgets
+icon: cube
+---
+
+## Overview
+
+All widgets in the iframe-edge project follow a **single-file architecture** pattern. Each widget is completely self-contained in one HTML file with embedded CSS and JavaScript, requiring no external dependencies or build tools.
+
+## Single-file structure
+
+Every widget combines three core web technologies in a single `.html` file:
+
+<Tabs>
+  <Tab title="HTML Structure">
+    The HTML provides the semantic structure and loads the theme system:
+    
+    ```html index.html:1-18
+    <!doctype html>
+    <html lang="en">
+    <head>
+      <script src="../theme-loader.js"></script>
+      <meta charset="UTF-8" />
+      <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; ..." />
+      <title>Pomodoro</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+      <link rel="stylesheet" href="./style.css" />
+    </head>
+    ```
+    
+    <Note>
+      The theme-loader script is loaded first to prevent flash of unstyled content (FOUC).
+    </Note>
+  </Tab>
+  
+  <Tab title="CSS Styling">
+    Styles are typically in a separate `style.css` file but could be inlined:
+    
+    ```css
+    :root[data-theme="dark"] {
+      --bg-1: #0a0a0a;
+      --text-1: #ffffff;
+    }
+    
+    :root[data-theme="light"] {
+      --bg-1: #ffffff;
+      --text-1: #0a0a0a;
+    }
+    
+    .widget {
+      background: var(--bg-1);
+      color: var(--text-1);
+    }
+    ```
+  </Tab>
+  
+  <Tab title="JavaScript Logic">
+    Widget behavior is in a separate `app.js` file with vanilla JavaScript:
+    
+    ```html index.html:88
+    <script src="./app.js"></script>
+    ```
+  </Tab>
+</Tabs>
+
+## No external dependencies
+
+Widgets are designed to work without any external JavaScript libraries or frameworks:
+
+- **No npm packages** - Everything runs in the browser
+- **No build step** - Files work directly when opened
+- **No framework** - Pure vanilla JavaScript (ES6+)
+- **No bundler** - Self-contained HTML files
+
+This approach ensures:
+- Fast load times
+- Minimal file size
+- Easy deployment
+- Maximum compatibility with iCUE and Xenon Edge displays
+
+## Vanilla JavaScript patterns
+
+### DOM helper function
+
+All widgets use a simple `$` helper function for DOM manipulation:
+
+```javascript app.js:3
+const $ = (id) => document.getElementById(id);
+```
+
+**Usage:**
+```javascript
+// Get element by ID
+const button = $("startBtn");
+
+// Update content
+$("timerDigits").textContent = "25:00";
+
+// Add event listener
+$("themeToggle").addEventListener("click", () => {
+  // Handle click
+});
+```
+
+### IIFE pattern
+
+All widget JavaScript is wrapped in an Immediately Invoked Function Expression (IIFE) to avoid global namespace pollution:
+
+```javascript app.js:1-2
+(() => {
+  "use strict";
+  // All widget code here
+})();
+```
+
+### Toast notification system
+
+Widgets include a reusable toast notification function:
+
+```javascript app.js:4-10
+function showToast(msg, duration = 3000) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.add("visible");
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove("visible"), duration);
+}
+```
+
+**Usage:**
+```javascript
+showToast("💧 Great job! Hydration goal reached!");
+showToast("🍅 Focus complete! 5 min break.", 5000);
+```
+
+## Local storage for persistence
+
+Widgets use `localStorage` to persist user data across sessions:
+
+### Storage keys pattern
+
+```javascript
+const THEME_KEY = "pa_theme";
+const LANG_KEY = "pa_lang";
+const NOTES_KEY = "pa_quickNotes";
+const WATER_KEY = "pa_waterCount";
+const WATER_DATE_KEY = "pa_waterDate";
+```
+
+<Note>
+  All storage keys use the `pa_` prefix to avoid conflicts with other applications.
+</Note>
+
+### Reading from localStorage
+
+```javascript app.js:13
+let currentTheme = localStorage.getItem(THEME_KEY) || "dark";
+```
+
+### Writing to localStorage
+
+```javascript app.js:22
+localStorage.setItem(THEME_KEY, currentTheme);
+```
+
+### Auto-save pattern
+
+The Notes widget demonstrates debounced auto-saving:
+
+```javascript notes/app.js:108-115
+notesArea.addEventListener("input", () => {
+  updateCharCount();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    localStorage.setItem(NOTES_KEY, notesArea.value);
+    flashSaved();
+  }, 500);
+});
+```
+
+### Date-based storage
+
+The Hydration widget resets daily by checking the stored date:
+
+```javascript hydration/app.js:96-104
+function loadWater() {
+  const savedDate = localStorage.getItem(WATER_DATE_KEY);
+  if (savedDate !== today()) {
+    localStorage.setItem(WATER_DATE_KEY, today());
+    localStorage.setItem(WATER_KEY, "0");
+    return 0;
+  }
+  return parseInt(localStorage.getItem(WATER_KEY) || "0", 10);
+}
+```
+
+## Cross-window synchronization
+
+Widgets listen for storage events to sync state across multiple windows:
+
+```javascript app.js:26-31
+window.addEventListener("storage", (e) => {
+  if (e.key === THEME_KEY) {
+    currentTheme = e.newValue;
+    updateThemeUI();
+  }
+});
+```
+
+<Tip>
+  When a user changes the theme in one widget, all other open widgets update automatically.
+</Tip>
+
+## Code organization
+
+Typical widget file structure:
+
+```
+widget-name/
+├── index.html       # Main HTML structure
+├── style.css        # Widget styles with theme support
+└── app.js           # Widget logic and interactivity
+```
+
+Shared files:
+```
+productivity/
+└── theme-loader.js  # Shared theme initialization script
+```
+
+## Best practices
+
+<Accordion title="Keep it simple">
+  Avoid complexity - widgets should be easy to understand and modify without specialized knowledge.
+</Accordion>
+
+<Accordion title="Progressive enhancement">
+  Start with working HTML, then layer on CSS and JavaScript enhancements.
+</Accordion>
+
+<Accordion title="Fail gracefully">
+  Use try-catch blocks when accessing localStorage:
+  
+  ```javascript theme-loader.js:4-12
+  try {
+    var theme = localStorage.getItem("pa_theme") || "dark";
+    if (theme !== "dark" && theme !== "light" && theme !== "blur") {
+      theme = "dark";
+    }
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (_) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  }
+  ```
+</Accordion>
+
+<Accordion title="Use semantic HTML">
+  Proper HTML structure improves accessibility and maintainability.
+</Accordion>

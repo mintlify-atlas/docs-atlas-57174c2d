@@ -1,0 +1,252 @@
+---
+title: Posture Reminder
+description: Health reminder widget following the 20-20-20 rule for eye strain and posture
+---
+
+The Posture Reminder widget implements the 20-20-20 rule to protect your eyes and remind you to maintain good posture. Every 20 minutes, it prompts you to look 20 feet away for 20 seconds and check your posture.
+
+## Demo
+
+<iframe src="https://stealthylabshq.github.io/iframe-edge/productivity/posture-reminder/" style={{width: '100%', height: '300px', border: '1px solid var(--border-color)', borderRadius: '8px'}}></iframe>
+
+## Key Features
+
+- **20-minute timer**: Countdown to next reminder
+- **Visual alert**: Widget changes appearance when time's up
+- **Health reminders**: Posture, eye rest, and blinking prompts
+- **Auto-start**: Begins counting immediately on load
+- **One-click reset**: Acknowledge and restart with single button
+- **Bilingual**: French/English toggle
+- **Always running**: Continuous loop for all-day protection
+
+## The 20-20-20 Rule
+
+The widget implements a scientifically-backed health practice:
+
+<Info>
+**Every 20 minutes:**
+- Look at something 20 feet (6 meters) away
+- For at least 20 seconds
+- This reduces eye strain and digital fatigue
+</Info>
+
+The widget adds posture and blinking reminders:
+- **Sit up straight**: Check your back and shoulder alignment
+- **Blink your eyes**: Combat dry eyes from reduced blink rate
+
+## Timer Implementation
+
+```javascript
+const INTERVAL_S = 20 * 60; // 20 minutes
+let timeLeft = INTERVAL_S;
+let isAlert = false;
+let timer = null;
+
+timer = setInterval(() => {
+  if (!isAlert) {
+    timeLeft--;
+    renderTimer();
+    if (timeLeft <= 0) {
+      triggerAlert();
+    }
+  }
+}, 1000);
+```
+
+## States
+
+### Working State
+
+- **Display**: Countdown timer showing remaining time
+- **Message**: "Focusing. Next friendly reminder in 20m."
+- **Button**: "Reset" (allows manual restart)
+- **Visual**: Normal widget appearance
+
+### Alert State
+
+- **Display**: "00:00" (time expired)
+- **Message**: "Sit up straight. Look 20ft away for 20s. Blink your eyes."
+- **Button**: "Done! Resume" 
+- **Visual**: Widget adds `alert-mode` class for styling
+
+## Alert Trigger
+
+```javascript
+function triggerAlert() {
+  isAlert = true;
+  $("widget").classList.add("alert-mode");
+  updateLangUI();
+}
+```
+
+## Reset Functionality
+
+```javascript
+function resetTimer() {
+  isAlert = false;
+  timeLeft = INTERVAL_S;
+  $("widget").classList.remove("alert-mode");
+  updateLangUI();
+  renderTimer();
+}
+
+$("actionBtn").addEventListener("click", () => {
+  resetTimer();
+});
+```
+
+## Time Display
+
+```javascript
+function formatTime(s) {
+  if (isAlert) return "00:00";
+  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+}
+```
+
+## Bilingual Messages
+
+```javascript
+const i18n = {
+  fr: {
+    title: "Santé",
+    working: "Concentre-toi. Prochain rappel dans 20m.",
+    alertTime: "Il est temps !",
+    alertMsg: "Tiens-toi droit. Regarde au loin (6m) pendant 20s. Cligne des yeux.",
+    btnReset: "Réinitialiser",
+    btnDone: "Fait ! Reprendre",
+  },
+  en: {
+    title: "Care",
+    working: "Focusing. Next friendly reminder in 20m.",
+    alertTime: "Time's up!",
+    alertMsg: "Sit up straight. Look 20ft away for 20s. Blink your eyes.",
+    btnReset: "Reset",
+    btnDone: "Done! Resume",
+  },
+};
+```
+
+## Usage
+
+<Steps>
+  <Step title="Let it run">
+    The widget starts automatically and counts down from 20:00
+  </Step>
+  <Step title="Keep working">
+    Continue your work while the timer runs in the background
+  </Step>
+  <Step title="Respond to alert">
+    When time's up, follow the health reminders displayed
+  </Step>
+  <Step title="Resume">
+    Click "Done! Resume" to restart the 20-minute cycle
+  </Step>
+</Steps>
+
+## Local Storage Keys
+
+| Key | Purpose | Type |
+|-----|---------|------|
+| `pa_theme` | Theme preference | "dark" or "light" |
+| `pa_lang` | Language preference | "fr" or "en" |
+
+<Note>
+The timer state is NOT persisted. Each time you load the widget, it starts fresh from 20 minutes. This ensures you don't accidentally skip reminders.
+</Note>
+
+## HTML Structure
+
+```html
+<div class="widget" id="widget">
+  <div class="mod-header">
+    <div class="mod-icon"><!-- Shield icon --></div>
+    <span class="mod-title" id="t-title">Care</span>
+    <div class="lang-toggle" id="themeToggle">🌙</div>
+    <div class="lang-toggle" id="langToggle">EN</div>
+  </div>
+
+  <div class="reminder-body">
+    <div class="time-display" id="timeDisplay">20:00</div>
+    <div class="message-area" id="msgArea">Working...</div>
+    <button class="action-btn" id="actionBtn">Reset</button>
+  </div>
+</div>
+```
+
+## Health Benefits
+
+### Eye Strain Prevention
+
+<Info>
+**Digital Eye Strain (Computer Vision Syndrome) symptoms:**
+- Dry eyes
+- Blurred vision  
+- Headaches
+- Neck and shoulder pain
+
+The 20-20-20 rule helps prevent these symptoms.
+</Info>
+
+### Posture Benefits
+
+- **Reduced back pain**: Regular posture checks prevent slouching
+- **Better breathing**: Upright posture opens chest cavity
+- **Increased energy**: Good posture improves circulation
+- **Less neck strain**: Proper head position reduces tension
+
+## Manual Reset
+
+You can manually reset the timer at any time:
+
+- **During countdown**: Restarts from 20:00 (useful if you just took a break)
+- **During alert**: Dismisses alert and starts new cycle
+
+## Customization Ideas
+
+While the widget is hardcoded to 20 minutes, you could modify `INTERVAL_S`:
+
+```javascript
+// Default: 20 minutes
+const INTERVAL_S = 20 * 60;
+
+// Alternative: 25 minutes (Pomodoro)
+const INTERVAL_S = 25 * 60;
+
+// Alternative: 30 minutes
+const INTERVAL_S = 30 * 60;
+```
+
+<Note>
+However, 20 minutes is recommended by eye care professionals. Going longer increases eye strain risk.
+</Note>
+
+## Best Practices
+
+<Tip>
+**When the alert appears:**
+1. Stand up if possible
+2. Roll your shoulders back
+3. Sit/stand with aligned spine
+4. Look at something far away (out a window is ideal)
+5. Blink deliberately 10-20 times
+6. Take 2-3 deep breaths
+7. Click "Done! Resume" and continue working
+</Tip>
+
+## Why This Matters
+
+**Average office worker:**
+- Sits 8-12 hours per day
+- Blinks 66% less when using computers
+- Experiences eye strain symptoms 50-90% of the time
+
+**This widget helps by:**
+- Breaking up continuous screen time
+- Prompting regular movement
+- Preventing cumulative strain
+- Creating healthy habits
+
+<Info>
+Combine this widget with the Pomodoro timer for comprehensive break management: Pomodoro for focus/break cycles, Posture Reminder for health.
+</Info>

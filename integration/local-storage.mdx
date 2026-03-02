@@ -1,0 +1,390 @@
+---
+title: "localStorage Usage"
+description: "How widgets use localStorage for persistence, common keys, data formats, and privacy considerations"
+---
+
+## Overview
+
+Widgets use browser `localStorage` to persist user preferences and application state across sessions. This page documents the localStorage schema, common keys, data formats, and best practices.
+
+## Common Storage Keys
+
+All widgets share a consistent naming convention with the `pa_` prefix ("Plugin Assistant").
+
+### Global Settings
+
+These keys are shared across all widgets:
+
+| Key | Type | Values | Description |
+|-----|------|--------|-------------|
+| `pa_theme` | string | `"dark"`, `"light"`, `"blur"` | Current theme preference |
+| `pa_lang` | string | `"fr"`, `"en"` | Language selection |
+
+### Widget-Specific Keys
+
+#### Timer Widget
+
+```javascript
+// From source/productivity/timer/app.js:82
+const STORAGE_KEY = "timer_v1";
+```
+
+**Key:** `timer_v1`  
+**Format:** JSON object  
+**Contains:**
+- `phases` - Array of phase definitions
+- `currentPhaseIdx` - Active phase index
+- `displayMode` - Display style ("ring" or "digital")
+- `nextId` - Auto-incrementing ID for new phases
+
+#### Notes Widget
+
+```javascript
+// From source/productivity/notes/app.js:87
+const NOTES_KEY = "pa_quickNotes";
+```
+
+**Key:** `pa_quickNotes`  
+**Format:** Plain text  
+**Contains:** Raw note content (auto-saved)
+
+#### AI Assistant Widget
+
+```javascript
+// From source/ai-assistant/app.js:7-20
+const LS = {
+  THEME: "pa_theme",
+  LANG: "pa_lang",
+  PROVIDER: "pa_ai_provider",
+  KEY_GEMINI: "pa_ai_key_gemini",
+  KEY_CLAUDE: "pa_ai_key_claude",
+  KEY_OPENAI: "pa_ai_key_openai",
+  MODEL_GEMINI: "pa_ai_model_gemini",
+  MODEL_CLAUDE: "pa_ai_model_claude",
+  MODEL_OPENAI: "pa_ai_model_openai",
+  PROXY: "pa_ai_proxy_url",
+  SYSTEM: "pa_ai_system_prompt",
+  CONVS: "pa_ai_conversations",
+};
+```
+
+<Warning>
+The AI Assistant migrates API keys from `localStorage` to `sessionStorage` for security. Legacy keys (`pa_ai_key_*`) are automatically removed after migration.
+</Warning>
+
+**Migration logic:**
+
+```javascript
+// From source/ai-assistant/app.js:86-100
+function getApiKey(provider = state.provider) {
+  const sessionKey = sessionKeyForProvider(provider);
+  const legacyKey = legacyKeyForProvider(provider);
+  const fromSession = safeGet(sessionStorage, sessionKey);
+  if (fromSession) return fromSession.trim();
+
+  // One-time migration from persistent localStorage to sessionStorage.
+  const fromLocal = safeGet(localStorage, legacyKey);
+  if (fromLocal) {
+    safeSet(sessionStorage, sessionKey, fromLocal.trim());
+    safeRemove(localStorage, legacyKey);
+    return fromLocal.trim();
+  }
+  return "";
+}
+```
+
+## Data Formats and Structure
+
+### Simple String Values
+
+```javascript
+localStorage.setItem("pa_theme", "dark");
+localStorage.setItem("pa_lang", "fr");
+```
+
+### JSON Objects
+
+Complex data is serialized as JSON:
+
+```javascript
+// From source/productivity/timer/app.js:148-155
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    phases:          st.phases,
+    currentPhaseIdx: st.currentPhaseIdx,
+    displayMode:     st.displayMode,
+    nextId:          st.nextId,
+  }));
+}
+```
+
+**Loading with error handling:**
+
+```javascript
+// From source/productivity/timer/app.js:157-168
+function loadState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (saved && Array.isArray(saved.phases) && saved.phases.length > 0) {
+      st.phases          = saved.phases;
+      st.currentPhaseIdx = Math.min(saved.currentPhaseIdx || 0, saved.phases.length - 1);
+      st.displayMode     = saved.displayMode || "ring";
+      st.nextId          = saved.nextId || 4;
+      st.timeLeft        = st.phases[st.currentPhaseIdx].duration;
+    }
+  } catch (_) {}
+}
+```
+
+<Note>
+Always wrap `JSON.parse()` in try-catch blocks to handle corrupted data gracefully.
+</Note>
+
+### Conversation History (AI Assistant)
+
+```javascript
+// From source/ai-assistant/app.js:350-365
+function loadConversations() {
+  try {
+    const raw = localStorage.getItem(LS.CONVS);
+    state.conversations = raw ? JSON.parse(raw) : [];
+  } catch (_) {
+    state.conversations = [];
+  }
+}
+
+function saveConversations() {
+  try {
+    // Keep only the most recent MAX_CONVS
+    state.conversations = state.conversations.slice(0, MAX_CONVS);
+    localStorage.setItem(LS.CONVS, JSON.stringify(state.conversations));
+  } catch (_) { /* localStorage full — fail silently */ }
+}
+```
+
+**Conversation object structure:**
+
+```javascript
+const conv = {
+  id: "conv_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+  title: "",
+  createdAt: Date.now(),
+  messages: [],
+};
+```
+
+## Storage Event Synchronization
+
+Changes to `localStorage` in one window/iframe trigger `storage` events in other windows:
+
+```javascript
+// From source/productivity/timer/app.js:478-481
+window.addEventListener("storage", (e) => {
+  if (e.key === "pa_theme") { currentTheme = e.newValue; updateThemeUI(); }
+  if (e.key === "pa_lang")  { currentLang  = e.newValue; updateLangUI(); }
+});
+```
+
+<Tip>
+Use storage events to keep settings synchronized across multiple widget instances in iCUE's multi-monitor setup.
+</Tip>
+
+## Privacy Considerations
+
+### Data Stored Locally
+
+All localStorage data remains on your computer:
+- Never transmitted to external servers
+- Accessible only within the same browser origin
+- Persists until manually cleared or browser cache is wiped
+
+### Security Best Practices
+
+<Warning>
+**Never store sensitive credentials in localStorage**. It's readable by any JavaScript on the same origin, including browser extensions.
+</Warning>
+
+The AI Assistant demonstrates proper credential handling:
+
+```javascript
+// From source/ai-assistant/app.js:21-25
+const SS = {
+  KEY_GEMINI: "pa_ai_key_gemini_session",
+  KEY_CLAUDE: "pa_ai_key_claude_session",
+  KEY_OPENAI: "pa_ai_key_openai_session",
+};
+```
+
+API keys are stored in `sessionStorage`, which:
+- Clears when the browser tab closes
+- Provides short-term persistence without long-term exposure
+- Reduces risk of credential theft
+
+### Safe Storage Helper Functions
+
+```javascript
+// From source/ai-assistant/app.js:62-72
+function safeGet(storage, key) {
+  try { return storage.getItem(key) || ""; } catch (_) { return ""; }
+}
+
+function safeSet(storage, key, value) {
+  try { storage.setItem(key, value); } catch (_) { }
+}
+
+function safeRemove(storage, key) {
+  try { storage.removeItem(key); } catch (_) { }
+}
+```
+
+<Accordion title="Why wrap storage operations in try-catch?">
+Storage operations can fail due to:
+- **Quota exceeded**: localStorage has a size limit (typically 5-10MB)
+- **Private browsing**: Some browsers disable storage in incognito mode
+- **Browser extensions**: Security extensions may block storage access
+- **Storage corruption**: Rare file system errors
+
+Graceful error handling ensures widgets continue working even when storage fails.
+</Accordion>
+
+## Storage Quotas and Limits
+
+### Typical Limits
+
+- **localStorage size**: 5-10MB per origin (browser-dependent)
+- **Key/value lengths**: 1MB per item (browser-dependent)
+- **Number of keys**: Unlimited (within total size quota)
+
+### Quota Management
+
+The AI Assistant limits conversation history:
+
+```javascript
+// From source/ai-assistant/app.js:31
+const MAX_CONVS = 20;
+
+// From source/ai-assistant/app.js:359-364
+function saveConversations() {
+  try {
+    // Keep only the most recent MAX_CONVS
+    state.conversations = state.conversations.slice(0, MAX_CONVS);
+    localStorage.setItem(LS.CONVS, JSON.stringify(state.conversations));
+  } catch (_) { /* localStorage full — fail silently */ }
+}
+```
+
+## How to Reset/Clear Settings
+
+### Clear All Widget Data
+
+Open browser DevTools (F12), go to Console, and run:
+
+```javascript
+// Clear everything
+localStorage.clear();
+
+// Or selectively remove widget keys
+localStorage.removeItem("pa_theme");
+localStorage.removeItem("pa_lang");
+localStorage.removeItem("timer_v1");
+localStorage.removeItem("pa_quickNotes");
+localStorage.removeItem("pa_ai_conversations");
+```
+
+### Reset to Defaults (Per Widget)
+
+Most widgets provide reset functionality:
+
+**Timer Widget:**  
+Delete all custom phases - this triggers a reload from defaults
+
+**Notes Widget:**  
+Click "Clear" button to remove all content
+
+**AI Assistant:**  
+Use "Clear history" button in settings
+
+### Browser Cache Clear
+
+Clearing browser data removes all localStorage:
+
+1. Open browser settings
+2. Navigate to Privacy/Clear browsing data
+3. Select "Cookies and site data" or "Local storage"
+4. Clear data for the widget origin
+
+<Note>
+Clearing localStorage resets all widgets to default settings. Theme and language preferences will revert to French/Dark mode.
+</Note>
+
+## Inspecting localStorage
+
+### Using Browser DevTools
+
+1. Open DevTools (F12)
+2. Navigate to **Application** tab (Chrome) or **Storage** tab (Firefox)
+3. Expand **Local Storage** in the sidebar
+4. Click on your origin (e.g., `file://` or your iCUE URL)
+5. View/edit all stored keys and values
+
+### Programmatic Access
+
+```javascript
+// List all keys
+for (let i = 0; i < localStorage.length; i++) {
+  const key = localStorage.key(i);
+  const value = localStorage.getItem(key);
+  console.log(key, value);
+}
+
+// Get specific values
+console.log("Theme:", localStorage.getItem("pa_theme"));
+console.log("Language:", localStorage.getItem("pa_lang"));
+console.log("Timer state:", JSON.parse(localStorage.getItem("timer_v1")));
+```
+
+## Common Issues and Solutions
+
+<Accordion title="Settings not persisting">
+**Symptoms:** Theme/language resets on page reload
+
+**Causes:**
+- Browser in private/incognito mode
+- Storage quota exceeded
+- Browser extension blocking storage
+- File:// protocol with security restrictions
+
+**Solutions:**
+- Exit private browsing mode
+- Clear old data to free up quota
+- Disable blocking extensions
+- Check browser console for storage errors
+</Accordion>
+
+<Accordion title="Corrupted data errors">
+**Symptoms:** Widget shows default state despite saved data
+
+**Causes:**
+- Invalid JSON in localStorage
+- Interrupted write operations
+- Manual tampering
+
+**Solutions:**
+- Clear the specific localStorage key
+- Use DevTools to inspect/fix the value
+- Let the widget save new valid data
+</Accordion>
+
+<Accordion title="Cross-widget settings not syncing">
+**Symptoms:** Theme changes in one widget don't affect others
+
+**Causes:**
+- Different browser origins
+- Storage events not firing (same-window limitation)
+- Event listener not implemented
+
+**Solutions:**
+- Ensure all widgets use the same origin
+- Refresh other widgets manually
+- Check that widgets implement storage event listeners
+</Accordion>

@@ -1,0 +1,399 @@
+---
+title: Timer
+description: Multi-phase customizable timer with dual display modes and cycle management
+---
+
+The Timer widget is a sophisticated multi-phase countdown timer that lets you create custom timing cycles. Perfect for streaming, presentations, or any workflow requiring timed phases.
+
+## Demo
+
+<iframe src="https://stealthylabshq.github.io/iframe-edge/productivity/timer/" style={{width: '100%', height: '650px', border: '1px solid var(--border-color)', borderRadius: '8px'}}></iframe>
+
+## Key Features
+
+- **Multiple phases**: Create unlimited custom timing phases
+- **Dual display modes**: Toggle between ring and digital views
+- **Editable phases**: Rename phases and adjust durations
+- **Color-coded**: Each phase has a unique color for quick recognition
+- **Auto-advance**: Automatically moves to next phase when timer ends
+- **Cycle tracking**: Loops through all phases continuously
+- **Audio alert**: Plays beep sound when phase completes
+- **Visual flash**: Screen flash animation on phase end
+- **Persistent state**: Saves phases and settings to localStorage
+- **Bilingual**: French/English support
+
+## Default Phases
+
+```javascript
+const DEFAULT_PHASES = [
+  { id: 1, name: "Live",  duration: 30 * 60, colorIdx: 0 }, // 30 min, red
+  { id: 2, name: "BRB",   duration:  5 * 60, colorIdx: 1 }, // 5 min, orange
+  { id: 3, name: "Pause", duration: 15 * 60, colorIdx: 2 }, // 15 min, teal
+];
+```
+
+These defaults are ideal for streaming:
+
+- **Live**: Main content/streaming time (30 min)
+- **BRB**: Short break (5 min)
+- **Pause**: Longer break (15 min)
+
+## Display Modes
+
+### Ring View
+
+Circular progress ring with centered timer:
+
+- Large countdown digits in center
+- SVG circle that depletes clockwise
+- Phase name sublabel
+- Glowing effect with filter
+
+### Digital View
+
+Minimalist linear progress bar:
+
+- Large digital countdown
+- Horizontal progress bar
+- Phase name and total duration
+- Cleaner, more compact design
+
+Toggle between views with the display button in the header.
+
+## Phase Management
+
+### Adding Phases
+
+```javascript
+function addPhase() {
+  const colorIdx = st.nextId % PHASE_COLORS.length;
+  st.phases.push({
+    id: st.nextId++, 
+    name: t("newPhaseName"), 
+    duration: 5 * 60, 
+    colorIdx 
+  });
+  st.editingIdx = st.phases.length - 1;
+  renderPhaseList();
+  saveState();
+}
+```
+
+New phases default to 5 minutes and get the next color in rotation.
+
+### Editing Phases
+
+Click the edit button to enter edit mode:
+
+```html
+<form class="phase-edit-form">
+  <input class="phase-input-name" value="Live" placeholder="Name">
+  <input class="phase-input-time" value="30m" placeholder="ex: 25m">
+  <button type="submit">✓</button>
+  <button type="button">×</button>
+</form>
+```
+
+### Deleting Phases
+
+Click the trash icon to remove a phase:
+
+```javascript
+function deletePhase(idx) {
+  if (st.phases.length <= 1) return; // Must have at least 1
+  st.phases.splice(idx, 1);
+  if (st.currentPhaseIdx >= st.phases.length) {
+    st.currentPhaseIdx = st.phases.length - 1;
+  }
+  renderAll();
+  saveState();
+}
+```
+
+<Note>
+You cannot delete the last remaining phase. The widget always requires at least one phase.
+</Note>
+
+## Time Input Parsing
+
+The widget accepts multiple time formats:
+
+```javascript
+parseTime("25m")      // → 1500 seconds
+parseTime("1h30m")    // → 5400 seconds  
+parseTime("90")       // → 5400 seconds (interpreted as minutes)
+parseTime("1:30:00")  // → 5400 seconds
+parseTime("25:00")    // → 1500 seconds
+parseTime("1h30m20s") // → 5420 seconds
+```
+
+Supported units:
+
+- `h` - hours
+- `m` - minutes (not followed by 's')
+- `s` - seconds
+- `:` - colon-separated (HH:MM:SS or MM:SS)
+- Plain number - interpreted as minutes
+
+## Color System
+
+```javascript
+const PHASE_COLORS = [
+  { hex: "#ff6b6b", rgb: "255,107,107" },   // red
+  { hex: "#f4a261", rgb: "244,162,97"  },   // orange
+  { hex: "#4ecdc4", rgb: "78,205,196"  },   // teal
+  { hex: "#a78bfa", rgb: "167,139,250" },   // purple
+  { hex: "#34d399", rgb: "52,211,153"  },   // green
+];
+```
+
+Colors rotate through the 5-color palette. Each phase gets:
+
+```javascript
+colorIdx: st.nextId % PHASE_COLORS.length
+```
+
+Colors are applied via CSS custom properties:
+
+```javascript
+function applyPhaseColor(phase) {
+  const c = phaseColor(phase);
+  const root = document.documentElement;
+  root.style.setProperty("--pc", c.hex);
+  root.style.setProperty("--pc-rgb", c.rgb);
+}
+```
+
+## Progress Ring Math
+
+```javascript
+const CIRC = 2 * Math.PI * 42; // 263.89
+
+function renderTimer() {
+  const phase = st.phases[st.currentPhaseIdx];
+  const pct = st.timeLeft / phase.duration;
+  
+  // Ring view
+  $("ringProgress").style.strokeDashoffset = CIRC * (1 - pct);
+  
+  // Digital view  
+  $("progressFill").style.width = pct * 100 + "%";
+}
+```
+
+The SVG circle has:
+
+- `stroke-dasharray="263.89"` - full circle circumference
+- `stroke-dashoffset` - animated based on progress
+- As offset increases, less of the circle is visible
+
+## Audio Alert
+
+When a phase ends, the widget plays a 3-tone beep:
+
+```javascript
+function playEndSound() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  
+  function beep(freq, t0, dur) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    osc.type = "sine";
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(0.22, t0 + 0.02);
+    gain.gain.setValueAtTime(0.22, t0 + dur - 0.02);
+    gain.gain.linearRampToValueAtTime(0, t0 + dur);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.05);
+  }
+  
+  const now = ctx.currentTime;
+  beep(660,  now,        0.12);  // E5
+  beep(880,  now + 0.18, 0.12);  // A5
+  beep(1100, now + 0.36, 0.28);  // C#6
+}
+```
+
+This creates a pleasant ascending tri-tone alert.
+
+## Visual Flash
+
+```javascript
+function triggerEndFlash() {
+  const w = $("widget");
+  w.classList.remove("end-flash");
+  void w.offsetWidth; // Force reflow
+  w.classList.add("end-flash");
+  w.addEventListener("animationend", 
+    () => w.classList.remove("end-flash"), 
+    { once: true }
+  );
+}
+```
+
+The `end-flash` class triggers a CSS animation that flashes the widget background.
+
+## Phase Transitions
+
+```javascript
+function handlePhaseEnd() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  st.running = false;
+
+  const phaseName = st.phases[st.currentPhaseIdx].name;
+  playEndSound();
+  triggerEndFlash();
+
+  const nextIdx = (st.currentPhaseIdx + 1) % st.phases.length;
+  const isCycle = nextIdx === 0;
+  showToast(isCycle ? t("toastCycle") : t("toastEnd", phaseName));
+
+  st.currentPhaseIdx = nextIdx;
+  st.timeLeft = st.phases[nextIdx].duration;
+  renderAll();
+  saveState();
+}
+```
+
+When a phase ends:
+
+1. Stop the timer
+2. Play sound and flash
+3. Show toast notification
+4. Advance to next phase (or cycle back to first)
+5. Reset time to new phase duration
+6. Update UI and save state
+
+## Usage
+
+<Steps>
+  <Step title="Review default phases">
+    Check if Live (30m), BRB (5m), Pause (15m) work for you
+  </Step>
+  <Step title="Customize phases">
+    Edit names and durations, or add/delete phases as needed
+  </Step>
+  <Step title="Start the timer">
+    Click Start to begin countdown on current phase
+  </Step>
+  <Step title="Let it cycle">
+    Timer automatically advances through all phases
+  </Step>
+  <Step title="Manual control">
+    Use Reset to restart current phase, Skip to jump to next
+  </Step>
+</Steps>
+
+## Local Storage Keys
+
+| Key | Purpose | Type |
+|-----|---------|------|
+| `timer_v1` | All timer state | JSON object |
+| `pa_theme` | Theme preference | "dark" or "light" |
+| `pa_lang` | Language preference | "fr" or "en" |
+
+## State Structure
+
+```javascript
+{
+  phases: [
+    { id: 1, name: "Live", duration: 1800, colorIdx: 0 },
+    // ...
+  ],
+  currentPhaseIdx: 0,
+  displayMode: "ring" | "digital",
+  nextId: 4
+}
+```
+
+<Note>
+`timeLeft` and `running` state are NOT saved. The timer always loads in a stopped state at the beginning of the current phase.
+</Note>
+
+## Display Toggle Icons
+
+```javascript
+const ICON_RING = `<svg><!-- clock icon --></svg>`;
+const ICON_DISP = `<svg><!-- monitor icon --></svg>`;
+
+function renderDisplayMode() {
+  const isRing = st.displayMode === "ring";
+  $("ringView").classList.toggle("hidden", !isRing);
+  $("digitalView").classList.toggle("hidden", isRing);
+  // Show icon for the OTHER mode (what you'll switch TO)
+  $("displayBtn").innerHTML = isRing ? ICON_DISP : ICON_RING;
+}
+```
+
+## Use Cases
+
+### Live Streaming
+
+- **Live**: Main stream time
+- **BRB**: Bathroom/water break
+- **Pause**: Longer break or end screen
+
+### Presentations
+
+- **Intro**: 5 minutes
+- **Main Content**: 40 minutes  
+- **Q&A**: 15 minutes
+
+### Cooking
+
+- **Prep**: 15 minutes
+- **Cook**: 45 minutes
+- **Rest**: 10 minutes
+
+### Workouts
+
+- **Warm-up**: 5 minutes
+- **Exercise**: 20 minutes
+- **Cool-down**: 5 minutes
+
+<Tip>
+For streaming, combine this widget with OBS browser sources. The visual display makes it easy for your audience to see when you'll be back.
+</Tip>
+
+## Advanced Features
+
+### Skip Phase
+
+```javascript
+function skipPhase() {
+  if (!st.running && st.timeLeft === st.phases[st.currentPhaseIdx].duration) {
+    // Not started yet – just advance phase
+    handlePhaseEnd();
+  } else {
+    st.timeLeft = 1;
+    handlePhaseEnd();
+  }
+}
+```
+
+Skip works whether timer is running or stopped.
+
+### Format Duration for Display
+
+```javascript
+function formatDurationShort(s) {
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  let out = "";
+  if (h > 0) out += `${h}h`;
+  if (m > 0) out += `${m}m`;
+  if (sec > 0) out += `${sec}s`;
+  return out || "0m";
+}
+```
+
+This formats durations as "1h30m" for the edit input pre-fill.
+
+<Info>
+The Timer widget is the most complex productivity widget, featuring phase management, dual display modes, audio alerts, and sophisticated state persistence. It's designed for users who need precise control over timed workflows.
+</Info>

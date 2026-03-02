@@ -1,0 +1,189 @@
+---
+title: iFrame Widget Setup
+description: Add iframe-edge widgets to your iCUE dashboard using the iFrame widget
+---
+
+## What is the iFrame Widget?
+
+The iFrame widget in Corsair iCUE is a powerful feature that allows you to display any web-based content directly on your Xeneon Edge dashboard. It works by embedding web pages using HTML `<iframe>` tags, enabling you to:
+
+- Load live web content from any URL
+- Display interactive web applications
+- Use custom widgets like those from iframe-edge
+- Access third-party tools and services
+
+For iframe-edge widgets, the iFrame widget serves as the container that loads and displays the widget from GitHub Pages directly on your monitor.
+
+<Info>
+All iframe-edge widgets are hosted on GitHub Pages and load in real-time, so you'll always have the latest version without needing to update manually.
+</Info>
+
+## Adding an iFrame Widget
+
+<Steps>
+  <Step title="Open iCUE Configuration">
+    Launch **iCUE** and navigate to your Xeneon Edge display's screen/dashboard configuration.
+  </Step>
+
+  <Step title="Locate the iFrame Widget">
+    In the **Widgets** list on the left column, find and click on the **`</> iFrame`** icon.
+    
+    This will reveal the iFrame widget options.
+  </Step>
+
+  <Step title="Choose Widget Size">
+    Select your desired widget size from the available options:
+    - **`M`** (Medium) - Compact widgets for quick reference
+    - **`L`** (Large) - Standard size for most widgets
+    - **`XL`** (Extra Large) - Maximum size for detailed content
+    
+    See the [sizing guide](/integration/sizing) for detailed information on choosing the right size.
+  </Step>
+
+  <Step title="Add Widget to Dashboard">
+    Click or drag the iFrame widget to add it to your dashboard layout.
+    
+    The widget will appear on your dashboard with placeholder content.
+  </Step>
+
+  <Step title="Paste the iFrame Code">
+    In the iFrame settings panel, look for the **HTML code** text area.
+    
+    Copy the `<iframe>` code for your desired widget from the available widgets table and paste it into this text area.
+  </Step>
+
+  <Step title="Save and View">
+    Click **Save** or **Apply** to confirm your changes.
+    
+    The widget will immediately load and display live content from the specified URL.
+  </Step>
+</Steps>
+
+<Note>
+The widget will load instantly from GitHub Pages. If you don't see content immediately, check your internet connection.
+</Note>
+
+## Pasting iFrame URLs
+
+When adding an iframe-edge widget, you need to paste the complete `<iframe>` HTML tag into the text area. Here's the format:
+
+```html
+<iframe src="https://stealthylabshq.github.io/iframe-edge/[widget-path]/"></iframe>
+```
+
+### Important Notes:
+
+- **Use the complete tag**: Always paste the full `<iframe>` tag, not just the URL
+- **Include closing tag**: Make sure to include `</iframe>` at the end
+- **Exact URL**: Copy the exact URL from the widgets table - don't modify it
+- **No quotes issues**: Ensure you're copying straight quotes (`"`), not curly quotes
+
+<Warning>
+Do not modify the iframe URL unless you know what you're doing. Changing the URL may cause the widget to fail to load or function incorrectly.
+</Warning>
+
+## Testing the Widget
+
+After adding a widget, verify it's working correctly:
+
+1. **Check for Content**: The widget should display its interface immediately
+2. **Test Interactions**: Try clicking buttons or interacting with widget controls
+3. **Verify Responsiveness**: The widget should fit properly within its container
+4. **Check Language/Theme**: Most widgets support EN/FR and dark/light mode toggles
+
+If the widget doesn't load:
+- Verify your internet connection
+- Check that you pasted the complete `<iframe>` code
+- Ensure there are no extra spaces or characters
+- Try refreshing the dashboard or restarting iCUE
+
+## Example: Adding the Hydration Widget
+
+Here's a complete example of adding the Hydration widget to your dashboard:
+
+<Steps>
+  <Step title="Select iFrame Widget">
+    In iCUE, click on the **`</> iFrame`** icon in the Widgets list.
+  </Step>
+
+  <Step title="Choose Size M or L">
+    For the Hydration widget, either **`M`** or **`L`** size works well.
+    
+    Select your preferred size and add the widget to your dashboard.
+  </Step>
+
+  <Step title="Paste the Code">
+    Copy this exact code:
+    
+    ```html
+    <iframe src="https://stealthylabshq.github.io/iframe-edge/productivity/hydration/"></iframe>
+    ```
+    
+    Paste it into the **HTML code** text area in the iFrame settings.
+  </Step>
+
+  <Step title="Save and Use">
+    Click Save. The Hydration widget will load, allowing you to track your daily water intake.
+    
+    You can now interact with the widget directly on your Xeneon Edge display.
+  </Step>
+</Steps>
+
+## More Widget Examples
+
+Here are additional widget codes you can use:
+
+### AI Assistant
+```html
+<iframe src="https://stealthylabshq.github.io/iframe-edge/ai-assistant/"></iframe>
+```
+<Note>
+The AI Assistant requires additional setup with an API key. See widget-specific documentation for details.
+</Note>
+
+### Pomodoro Timer
+```html
+<iframe src="https://stealthylabshq.github.io/iframe-edge/productivity/pomodoro/"></iframe>
+```
+
+### Quick Notes
+```html
+<iframe src="https://stealthylabshq.github.io/iframe-edge/productivity/notes/"></iframe>
+```
+
+### Spotify Visualizer
+```html
+<iframe src="https://stealthylabshq.github.io/iframe-edge/spotify-visualizer/"></iframe>
+```
+<Note>
+The Spotify Visualizer requires a Spotify Premium account and additional setup. See widget-specific documentation.
+</Note>
+
+### Budget Tracker
+```html
+<iframe src="https://stealthylabshq.github.io/iframe-edge/productivity/budget/"></iframe>
+```
+
+### Daily Focus
+```html
+<iframe src="https://stealthylabshq.github.io/iframe-edge/productivity/daily-focus/"></iframe>
+```
+
+## Widget Features
+
+All iframe-edge widgets include:
+
+- **Fully Responsive**: Automatically adapts to M, L, or XL sizes
+- **Dark/Light Mode**: Toggle theme using the built-in switcher
+- **Bilingual Support**: Switch between English and French
+- **Local Storage**: Your settings and data are saved locally in iCUE
+- **No Dependencies**: Everything runs in the browser, no installation needed
+
+<Info>
+Widget data is stored locally in your browser's storage (managed by iCUE). Your information never leaves your device.
+</Info>
+
+## Next Steps
+
+- Learn about [widget sizing options](/integration/sizing)
+- Explore individual widget guides for specific features

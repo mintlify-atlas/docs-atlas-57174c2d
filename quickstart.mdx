@@ -1,80 +1,170 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick start
+description: Add your first widget to iCUE in under 2 minutes
 ---
 
-## Get started in three steps
+## Get your first widget running
 
-Get your documentation site running locally and make your first customization.
+This guide will walk you through adding the Hydration widget to your Corsair iCUE setup. The same process works for any iframe-edge widget.
 
-### Step 1: Set up your local environment
+<Steps>
+  <Step title="Open iCUE">
+    Launch the Corsair iCUE software and navigate to your Xeneon Edge display configuration.
+  </Step>
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+  <Step title="Add an iframe widget">
+    In the **Widgets** list on the left sidebar, click the **`</> iFrame`** icon.
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    Choose your desired size:
+    - **M** - Compact layout for smaller displays
+    - **L** - Standard layout with more breathing room
+    - **XL** - Full-featured layout with maximum space
+  </Step>
 
-### Step 2: Deploy your changes
+  <Step title="Paste the iframe code">
+    In the iframe settings panel, locate the **HTML code** text area and paste this code:
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    ```html
+    <iframe src="https://stealthylabshq.github.io/iframe-edge/productivity/hydration/"></iframe>
+    ```
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    <Tip>
+      The widget loads directly from GitHub Pages, so you'll always get the latest version automatically.
+    </Tip>
+  </Step>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+  <Step title="See it in action">
+    The Hydration widget will load immediately on your Xeneon Edge display. You'll see:
+    - A water glass icon and title
+    - Your daily progress (0 / 8 glasses)
+    - Empty glass indicators
+    - A **+1 glass** button to track your hydration
+  </Step>
+</Steps>
 
-### Step 3: Go live
+## Understanding the widget
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+The Hydration widget you just added is a fully self-contained application. Here's what makes it work:
+
+### HTML structure
+
+The widget uses semantic HTML with a clean component hierarchy:
+
+```html
+<div class="widget">
+  <div class="mod-header">
+    <div class="mod-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round">
+        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+      </svg>
+    </div>
+    <span class="mod-title" id="t-title">Hydration</span>
+    <div class="lang-toggle" id="themeToggle" style="margin-left: auto">
+      🌙
+    </div>
+    <div class="lang-toggle" id="langToggle">EN</div>
+  </div>
+  <div class="water-body">
+    <div class="water-count-row">
+      <div class="water-number" id="waterNum">0</div>
+      <div class="water-meta" id="t-meta">/ 8 glasses · 2 L</div>
+    </div>
+    <div class="glass-grid" id="glassGrid"></div>
+    <div class="water-status" id="waterStatus">Start hydrating!</div>
+    <div class="water-controls">
+      <button class="btn btn-ghost" id="waterMinus" aria-label="Remove a glass">
+        <!-- minus icon -->
+      </button>
+      <button class="btn btn-water" id="waterPlus" aria-label="Add a glass">
+        <!-- water droplet icon -->
+        <span id="t-add">+1 glass</span>
+      </button>
+    </div>
+  </div>
+</div>
+```
+
+### JavaScript architecture
+
+The widget's logic is pure vanilla JavaScript with no dependencies:
+
+```javascript
+const $ = (id) => document.getElementById(id);
+
+function showToast(msg, duration = 3000) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.add("visible");
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove("visible"), duration);
+}
+
+function today() {
+  return new Date().toISOString().split("T")[0];
+}
+
+const THEME_KEY = "pa_theme";
+let currentTheme = localStorage.getItem(THEME_KEY) || "dark";
+
+function updateThemeUI() {
+  $("themeToggle").textContent = currentTheme === "dark" ? "🌙" : "☀️";
+  document.documentElement.setAttribute("data-theme", currentTheme);
+}
+
+$("themeToggle").addEventListener("click", () => {
+  currentTheme = currentTheme === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME_KEY, currentTheme);
+  updateThemeUI();
+});
+```
+
+<Note>
+  The widget uses localStorage to persist your theme preference and daily water count. This data is stored locally in your browser and never sent to any server.
+</Note>
+
+## Try the widget features
+
+Now that your widget is running, explore these features:
+
+1. **Track your hydration** - Click the **+1 glass** button to log water intake
+2. **Toggle theme** - Click the moon icon (🌙) to switch between dark and light modes
+3. **Change language** - Click **EN** to toggle between English and French
+4. **Reset progress** - Use the minus button to adjust your count if needed
+
+<Info>
+  Your hydration count automatically resets at midnight each day. The widget shows encouraging messages as you progress toward your daily goal of 8 glasses.
+</Info>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card
+    title="Explore more widgets"
+    icon="grid"
+    href="/widgets/productivity/hydration"
+  >
+    Browse all available productivity widgets
+  </Card>
+  <Card
+    title="Try the AI assistant"
+    icon="robot"
+    href="/widgets/ai/ai-assistant"
+  >
+    Set up AI chat with Gemini, Claude, or ChatGPT
+  </Card>
+  <Card
+    title="Learn the architecture"
+    icon="code"
+    href="/concepts/architecture"
+  >
+    Understand how widgets are built
+  </Card>
+  <Card
+    title="Customize your setup"
+    icon="palette"
+    href="/integration/customization"
+  >
+    Advanced theming and configuration options
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

@@ -1,0 +1,272 @@
+---
+title: Quick Clipboard
+description: Store and copy text snippets, links, and commands for quick access
+---
+
+The Quick Clipboard widget provides a persistent textarea for storing text snippets, links, scripts, or commands that you need frequent access to. It includes one-click copy functionality and auto-save.
+
+## Demo
+
+<iframe src="https://stealthylabshq.github.io/iframe-edge/productivity/quick-clipboard/" style={{width: '100%', height: '400px', border: '1px solid var(--border-color)', borderRadius: '8px'}}></iframe>
+
+## Key Features
+
+- **One-click copy**: Copy entire content to clipboard with single button
+- **Auto-save**: Content saves 300ms after you stop typing
+- **Persistent storage**: Retains content across sessions
+- **Copy fallback**: Uses `document.execCommand` for iframe compatibility
+- **Clear button**: Quick delete with visual confirmation
+- **Bilingual**: French/English support
+- **No spell check**: Clean typing for code and commands
+
+## Copy Mechanism
+
+The widget uses a fallback copy method that works in iframes:
+
+```javascript
+$("copyBtn").addEventListener("click", () => {
+  const text = clipArea.value;
+  if (!text.trim()) {
+    showToast(t("toastEmpty"));
+    return;
+  }
+
+  // Create a temporary off-screen textarea
+  const tmp = document.createElement("textarea");
+  tmp.value = text;
+  tmp.style.position = "fixed";
+  tmp.style.top = "-9999px";
+  tmp.style.left = "-9999px";
+  tmp.setAttribute("readonly", "");
+  document.body.appendChild(tmp);
+  tmp.focus();
+  tmp.select();
+  tmp.setSelectionRange(0, 99999);
+  
+  try {
+    const ok = document.execCommand("copy");
+    showToast(ok ? t("toastCopied") : "❌ Copy failed.");
+  } catch (e) {
+    showToast("❌ Copy failed.");
+  }
+  
+  document.body.removeChild(tmp);
+});
+```
+
+<Info>
+This widget uses `document.execCommand('copy')` instead of the modern `navigator.clipboard` API because it needs to work inside iframes. The modern API often fails in embedded contexts due to security restrictions.
+</Info>
+
+## Auto-Save Implementation
+
+```javascript
+const CLIP_KEY = "pa_quickClipboard";
+let saveTimer = null;
+const clipArea = $("clipArea");
+
+clipArea.value = localStorage.getItem(CLIP_KEY) || "";
+
+clipArea.addEventListener("input", () => {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    localStorage.setItem(CLIP_KEY, clipArea.value);
+  }, 300);
+});
+```
+
+The 300ms debounce is shorter than Notes (500ms) because clipboard content is often copied quickly - you don't want to lose snippets due to slow saves.
+
+## Clear Functionality
+
+```javascript
+$("clearBtn").addEventListener("click", () => {
+  clipArea.value = "";
+  localStorage.removeItem(CLIP_KEY);
+  showToast(t("toastCleared"));
+});
+```
+
+<Note>
+Unlike the Notes widget, the Clear button does NOT ask for confirmation. This is intentional - clipboard content is usually temporary, and accidental clears are less catastrophic.
+</Note>
+
+## HTML Structure
+
+```html
+<div class="clip-body">
+  <textarea 
+    class="clip-textarea" 
+    id="clipArea"
+    placeholder="Paste links, scripts, or text here for quick access..."
+    spellcheck="false"></textarea>
+  
+  <div class="clip-footer">
+    <button class="btn-copy" id="copyBtn">
+      <svg><!-- clipboard icon --></svg>
+      <span id="t-copy">Copy to Clipboard</span>
+    </button>
+    <button class="btn-clear" id="clearBtn">
+      <svg><!-- trash icon --></svg>
+    </button>
+  </div>
+</div>
+```
+
+## Usage
+
+<Steps>
+  <Step title="Store your snippets">
+    Paste or type text you need frequent access to
+  </Step>
+  <Step title="Content auto-saves">
+    Wait 300ms after typing for automatic save
+  </Step>
+  <Step title="Copy when needed">
+    Click "Copy to Clipboard" button to copy everything
+  </Step>
+  <Step title="Clear when done">
+    Use trash icon to delete content
+  </Step>
+</Steps>
+
+## Local Storage Keys
+
+| Key | Purpose | Type |
+|-----|---------|------|
+| `pa_quickClipboard` | Clipboard content | String |
+| `pa_theme` | Theme preference | "dark" or "light" |
+| `pa_lang` | Language preference | "fr" or "en" |
+
+## Bilingual Support
+
+```javascript
+const i18n = {
+  fr: {
+    title: "Presse-papiers",
+    placeholder: "Collez vos liens, scripts ou commandes ici pour un accès rapide...",
+    btnCopy: "Copier le texte",
+    toastCopied: "✅ Copié dans le presse-papiers !",
+    toastEmpty: "⚠️ Rien à copier.",
+    toastCleared: "🗑️ Presse-papiers vidé.",
+  },
+  en: {
+    title: "Clipboard",
+    placeholder: "Paste links, scripts, or text here for quick access...",
+    btnCopy: "Copy text",
+    toastCopied: "✅ Copied to clipboard!",
+    toastEmpty: "⚠️ Nothing to copy.",
+    toastCleared: "🗑️ Clipboard cleared.",
+  },
+};
+```
+
+## Toast Notifications
+
+The widget shows toast messages for:
+
+- **Copy success**: "✅ Copied to clipboard!"
+- **Copy failure**: "❌ Copy failed."
+- **Empty copy attempt**: "⚠️ Nothing to copy."
+- **Clear action**: "🗑️ Clipboard cleared."
+
+## Use Cases
+
+### For Developers
+
+```bash
+# Store frequently-used commands
+git commit -m "feat: add new feature"
+npm run build && npm run deploy
+docker-compose up -d
+```
+
+### For Writers
+
+```
+Store boilerplate text:
+- Email signatures
+- Common responses
+- Markdown templates
+- Copyright notices
+```
+
+### For Support Teams
+
+```
+Quick responses:
+- Troubleshooting steps
+- FAQ answers
+- Support ticket templates
+- Contact information
+```
+
+### For Designers
+
+```
+Design resources:
+- Color hex codes (#FF6B6B, #4ECDC4)
+- Font declarations
+- CSS snippets
+- Asset URLs
+```
+
+## Copy Button SVG Icon
+
+```html
+<svg width="14" height="14" viewBox="0 0 24 24" 
+  fill="none" stroke="currentColor" 
+  stroke-width="2.5" stroke-linecap="round">
+  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+</svg>
+```
+
+## Inline Script
+
+<Note>
+This widget includes the JavaScript inline in the HTML file (lines 65-195) rather than in a separate `app.js`. This is an exception to the pattern used by other widgets.
+</Note>
+
+## Differences from Notes Widget
+
+| Feature | Quick Clipboard | Notes |
+|---------|----------------|-------|
+| **Purpose** | Temporary storage, copy | Permanent note-taking |
+| **Auto-save delay** | 300ms | 500ms |
+| **Clear confirmation** | No | Yes |
+| **Character counter** | No | Yes |
+| **Save badge** | No | Yes |
+| **Main action** | Copy button | None (just saves) |
+
+<Tip>
+Use Quick Clipboard for things you copy frequently: commands, URLs, code snippets, email templates. Use Notes for longer-form thoughts and ideas.
+</Tip>
+
+## Security Considerations
+
+<Info>
+**Do NOT store sensitive data in this widget:**
+- Passwords or API keys
+- Personal identification numbers
+- Credit card information
+- Private tokens
+
+All content is stored in localStorage, which is accessible to any JavaScript on the same domain.
+</Info>
+
+## Iframe Compatibility
+
+The copy mechanism is specifically designed for iframe contexts:
+
+```javascript
+// Modern API (doesn't work in many iframes)
+navigator.clipboard.writeText(text); // ❌
+
+// Fallback method (works in iframes)
+document.execCommand('copy'); // ✅
+```
+
+<Info>
+The widget creates a temporary textarea, selects its content, and executes the copy command. This bypasses the security restrictions on `navigator.clipboard` in embedded contexts.
+</Info>
